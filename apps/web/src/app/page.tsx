@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/api-client";
 import { TaskCard } from "@/components/task-card";
 import Link from "next/link";
@@ -25,6 +25,14 @@ import {
   BarChart3,
   Gauge,
   Clock,
+  Zap,
+  FolderGit2,
+  ListTodo,
+  ArrowRight,
+  Rocket,
+  GitBranch,
+  Bot,
+  GitMerge,
 } from "lucide-react";
 import { StateBadge } from "@/components/state-badge";
 
@@ -161,20 +169,39 @@ export default function OverviewPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-text-muted">
-        <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading...
+      <div className="p-6 max-w-6xl mx-auto space-y-6">
+        <div className="h-8 w-32 rounded-lg bg-bg-card animate-pulse" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 rounded-xl bg-bg-card animate-pulse" />
+          ))}
+        </div>
+        <div className="h-16 rounded-xl bg-bg-card animate-pulse" />
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="space-y-2">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-20 rounded-lg bg-bg-card animate-pulse" />
+            ))}
+          </div>
+          <div className="space-y-2">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="h-16 rounded-lg bg-bg-card animate-pulse" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
+
+  const isFirstRun = taskStats?.total === 0;
 
   const totalCost = recentTasks.reduce((sum: number, t: any) => {
     return sum + (t.costUsd ? parseFloat(t.costUsd) : 0);
   }, 0);
 
-  const { nodes, pods, services, events, summary } = cluster ?? {
+  const { nodes, pods, events, summary } = cluster ?? {
     nodes: [],
     pods: [],
-    services: [],
     events: [],
     summary: {
       totalPods: 0,
@@ -186,10 +213,25 @@ export default function OverviewPage() {
     },
   };
 
+  if (isFirstRun) {
+    return <WelcomeHero cluster={cluster} summary={summary} nodes={nodes} />;
+  }
+
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
+          <p className="text-sm text-text-muted mt-0.5">
+            {taskStats?.running
+              ? `${taskStats.running} task${taskStats.running !== 1 ? "s" : ""} running`
+              : "All quiet"}
+            {taskStats?.needsAttention
+              ? ` · ${taskStats.needsAttention} need${taskStats.needsAttention !== 1 ? "" : "s"} attention`
+              : ""}
+          </p>
+        </div>
         <button
           onClick={refresh}
           className="p-2 rounded-lg hover:bg-bg-hover text-text-muted transition-colors"
@@ -198,31 +240,35 @@ export default function OverviewPage() {
         </button>
       </div>
 
-      {/* Top stats row: tasks + cluster combined */}
+      {/* Top stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           icon={Activity}
-          label="Running Tasks"
+          label="Running"
           value={taskStats?.running ?? 0}
           color="text-primary"
+          href="/tasks"
         />
         <StatCard
           icon={AlertTriangle}
-          label="Needs Attention"
+          label="Attention"
           value={taskStats?.needsAttention ?? 0}
           color="text-warning"
+          href="/tasks"
         />
         <StatCard
           icon={GitPullRequest}
           label="PRs Open"
           value={taskStats?.prOpened ?? 0}
           color="text-success"
+          href="/tasks"
         />
         <StatCard
           icon={CheckCircle}
-          label="Done"
+          label="Completed"
           value={taskStats?.completed ?? 0}
           color="text-success"
+          href="/tasks"
         />
       </div>
 
@@ -410,12 +456,12 @@ export default function OverviewPage() {
             </div>
           </div>
           {recentTasks.length === 0 ? (
-            <div className="text-center py-8 text-text-muted border border-dashed border-border rounded-lg text-sm">
-              No tasks yet.{" "}
-              <Link href="/tasks/new" className="text-primary hover:underline">
-                Create one →
-              </Link>
-            </div>
+            <EmptyState
+              icon={ListTodo}
+              title="No tasks yet"
+              description="Create your first task to get an AI agent working on your code."
+              action={{ label: "Create a task", href: "/tasks/new" }}
+            />
           ) : (
             <div className="grid gap-2">
               {recentTasks.map((task: any) => (
@@ -429,11 +475,16 @@ export default function OverviewPage() {
         <div className="min-w-0 overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-medium text-text-heading">Pods</h2>
+            <Link href="/cluster" className="text-xs text-primary hover:underline">
+              Cluster →
+            </Link>
           </div>
           {pods.length === 0 ? (
-            <div className="text-center py-8 text-text-muted border border-dashed border-border rounded-lg text-sm">
-              No pods running
-            </div>
+            <EmptyState
+              icon={Container}
+              title="No pods running"
+              description="Pods spin up automatically when you create a task."
+            />
           ) : (
             <div className="space-y-1.5">
               {pods.map((pod: any) => {
@@ -592,26 +643,242 @@ export default function OverviewPage() {
   );
 }
 
+/* ─── Welcome Hero (first-run state) ────────────────────────────────────── */
+
+function WelcomeHero({ cluster, summary, nodes }: { cluster: any; summary: any; nodes: any[] }) {
+  const clusterReady = summary.readyNodes > 0;
+
+  return (
+    <div className="p-6 max-w-5xl mx-auto">
+      {/* Hero */}
+      <div className="text-center pt-8 pb-10">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 mb-6">
+          <Zap className="w-8 h-8 text-primary" />
+        </div>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">Welcome to Optio</h1>
+        <p className="text-lg text-text-muted max-w-xl mx-auto leading-relaxed">
+          AI-powered workflow orchestration for your codebase. Submit a task, and Optio spins up an
+          agent that writes code, opens a PR, and handles review — all on autopilot.
+        </p>
+      </div>
+
+      {/* Pipeline visualization */}
+      <div className="rounded-xl border border-border/50 bg-bg-card p-6 mb-8">
+        <h2 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-5 text-center">
+          How it works
+        </h2>
+        <div className="flex items-center justify-center gap-3 md:gap-4 flex-wrap">
+          <PipelineStep icon={ListTodo} label="Submit Task" sublabel="Issue or manual" />
+          <PipelineArrow />
+          <PipelineStep icon={Bot} label="Agent Runs" sublabel="Isolated K8s pod" active />
+          <PipelineArrow />
+          <PipelineStep icon={GitBranch} label="Opens PR" sublabel="With code changes" />
+          <PipelineArrow />
+          <PipelineStep icon={GitMerge} label="Merged" sublabel="Auto on approval" />
+        </div>
+      </div>
+
+      {/* Getting started cards */}
+      <div className="grid md:grid-cols-3 gap-4 mb-8">
+        <OnboardingCard
+          step={1}
+          icon={FolderGit2}
+          title="Add a repository"
+          description="Connect a GitHub repo so Optio knows where to work."
+          href="/repos"
+          actionLabel="Add repo"
+        />
+        <OnboardingCard
+          step={2}
+          icon={Rocket}
+          title="Create your first task"
+          description="Describe what you want built or fixed — Optio handles the rest."
+          href="/tasks/new"
+          actionLabel="New task"
+        />
+        <OnboardingCard
+          step={3}
+          icon={Activity}
+          title="Watch it run"
+          description="Stream logs in real time as the agent writes code and opens a PR."
+          href="/tasks"
+          actionLabel="View tasks"
+        />
+      </div>
+
+      {/* Cluster status hint */}
+      <div className="rounded-xl border border-border/50 bg-bg-subtle p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Circle
+            className={cn(
+              "w-2.5 h-2.5 fill-current shrink-0",
+              clusterReady ? "text-success" : "text-warning",
+            )}
+          />
+          <div>
+            <span className="text-sm font-medium">
+              {clusterReady ? "Cluster is ready" : "Cluster connecting..."}
+            </span>
+            <span className="text-xs text-text-muted ml-2">
+              {summary.readyNodes}/{summary.totalNodes} nodes
+              {summary.totalPods > 0 && ` · ${summary.totalPods} pods`}
+            </span>
+          </div>
+        </div>
+        <Link
+          href="/cluster"
+          className="text-xs text-primary hover:underline flex items-center gap-1"
+        >
+          Details <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function PipelineStep({
+  icon: Icon,
+  label,
+  sublabel,
+  active,
+}: {
+  icon: any;
+  label: string;
+  sublabel: string;
+  active?: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2 min-w-[80px]">
+      <div
+        className={cn(
+          "w-11 h-11 rounded-xl flex items-center justify-center border transition-colors",
+          active
+            ? "bg-primary/15 border-primary/30 text-primary"
+            : "bg-bg-hover border-border/50 text-text-muted",
+        )}
+      >
+        <Icon className="w-5 h-5" />
+      </div>
+      <div className="text-center">
+        <div className="text-xs font-medium">{label}</div>
+        <div className="text-[10px] text-text-muted">{sublabel}</div>
+      </div>
+    </div>
+  );
+}
+
+function PipelineArrow() {
+  return (
+    <div className="hidden md:flex items-center text-border-strong pt-[-10px]">
+      <div className="w-6 h-px bg-border-strong" />
+      <ArrowRight className="w-3 h-3 -ml-0.5" />
+    </div>
+  );
+}
+
+function OnboardingCard({
+  step,
+  icon: Icon,
+  title,
+  description,
+  href,
+  actionLabel,
+}: {
+  step: number;
+  icon: any;
+  title: string;
+  description: string;
+  href: string;
+  actionLabel: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-xl border border-border/50 bg-bg-card hover:bg-bg-card-hover hover:border-border-strong p-5 transition-all"
+    >
+      <div className="flex items-center gap-3 mb-3">
+        <span className="text-[10px] font-bold text-text-muted/40 tabular-nums">
+          {String(step).padStart(2, "0")}
+        </span>
+        <Icon className="w-4 h-4 text-primary" />
+      </div>
+      <h3 className="text-sm font-semibold mb-1 group-hover:text-primary transition-colors">
+        {title}
+      </h3>
+      <p className="text-xs text-text-muted leading-relaxed mb-3">{description}</p>
+      <span className="text-xs text-primary flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+        {actionLabel} <ArrowRight className="w-3 h-3" />
+      </span>
+    </Link>
+  );
+}
+
+/* ─── Reusable empty state ──────────────────────────────────────────────── */
+
+function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+}: {
+  icon: any;
+  title: string;
+  description: string;
+  action?: { label: string; href: string };
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-10 px-4 rounded-xl border border-dashed border-border bg-bg-subtle/50">
+      <div className="w-10 h-10 rounded-lg bg-bg-hover flex items-center justify-center mb-3">
+        <Icon className="w-5 h-5 text-text-muted" />
+      </div>
+      <p className="text-sm font-medium text-text-muted mb-1">{title}</p>
+      <p className="text-xs text-text-muted/70 text-center max-w-xs mb-3">{description}</p>
+      {action && (
+        <Link
+          href={action.href}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-hover transition-colors"
+        >
+          {action.label} <ArrowRight className="w-3 h-3" />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+/* ─── Dashboard sub-components ──────────────────────────────────────────── */
+
 function StatCard({
   icon: Icon,
   label,
   value,
   color,
+  href,
 }: {
   icon: any;
   label: string;
   value: number;
   color: string;
+  href?: string;
 }) {
-  return (
-    <div className="p-4 rounded-xl border border-border/50 bg-bg-card relative overflow-hidden">
-      <Icon className={cn("w-8 h-8 absolute top-3 right-3 opacity-25", color)} />
+  const inner = (
+    <div
+      className={cn(
+        "p-4 rounded-xl border border-border/50 bg-bg-card relative overflow-hidden transition-colors",
+        href && "hover:bg-bg-card-hover hover:border-border-strong cursor-pointer",
+      )}
+    >
+      <Icon className={cn("w-8 h-8 absolute top-3 right-3 opacity-[0.12]", color)} />
       <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{label}</span>
       <div className="mt-1.5">
         <span className="text-3xl font-semibold tabular-nums">{value}</span>
       </div>
     </div>
   );
+
+  if (href) {
+    return <Link href={href}>{inner}</Link>;
+  }
+  return inner;
 }
 
 function UsageMeter({
