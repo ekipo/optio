@@ -1,0 +1,205 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+  <defs>
+    <clipPath id="round"><rect width="1200" height="720" rx="12"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#round)">
+    <!-- Background -->
+    <rect width="1200" height="720" fill="#0a0a0c"/>
+
+    <!-- Sidebar (compact) -->
+    <rect width="220" height="720" fill="#111113"/>
+    <line x1="220" y1="0" x2="220" y2="720" stroke="#27272a" stroke-width="1"/>
+
+    <!-- Sidebar Logo -->
+    <g transform="translate(20, 24)">
+      <rect width="32" height="32" rx="8" fill="#6d28d9" fill-opacity="0.15"/>
+      <path d="M22 6l-8 10h6l-2 10 8-10h-6z" fill="#6d28d9" stroke="#6d28d9" stroke-width="1.5" stroke-linejoin="round"/>
+      <text x="42" y="15" fill="#fafafa" font-size="16" font-weight="700">Optio</text>
+      <text x="42" y="28" fill="#a1a1aa" font-size="10">Agent Orchestration</text>
+    </g>
+
+    <!-- Nav Items -->
+    <g transform="translate(24, 86)">
+      <rect x="-16" y="-10" width="204" height="36" rx="8" fill="transparent"/>
+      <rect x="0" y="0" width="16" height="16" fill="none"/>
+      <rect x="1" y="1" width="6" height="6" rx="1" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <rect x="9" y="1" width="6" height="6" rx="1" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <rect x="1" y="9" width="6" height="6" rx="1" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <rect x="9" y="9" width="6" height="6" rx="1" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <text x="24" y="13" fill="#a1a1aa" font-size="13" font-weight="400">Overview</text>
+    </g>
+
+    <!-- Active: Tasks -->
+    <rect x="8" y="112" width="204" height="36" rx="8" fill="#6d28d9" fill-opacity="0.1"/>
+    <rect x="8" y="112" width="3" height="36" rx="1.5" fill="#6d28d9"/>
+    <g transform="translate(24, 122)">
+      <rect x="1" y="1" width="14" height="14" rx="2" stroke="#6d28d9" stroke-width="1.5" fill="none"/>
+      <line x1="5" y1="5" x2="12" y2="5" stroke="#6d28d9" stroke-width="1.5"/>
+      <line x1="5" y1="8" x2="10" y2="8" stroke="#6d28d9" stroke-width="1.5"/>
+      <line x1="5" y1="11" x2="12" y2="11" stroke="#6d28d9" stroke-width="1.5"/>
+      <text x="24" y="13" fill="#6d28d9" font-size="13" font-weight="500">Tasks</text>
+    </g>
+
+    <!-- Repos -->
+    <g transform="translate(24, 162)">
+      <path d="M3 2h10a2 2 0 012 2v10a2 2 0 01-2 2H3" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <path d="M3 2v14" stroke="#a1a1aa" stroke-width="1.5"/>
+      <text x="24" y="13" fill="#a1a1aa" font-size="13" font-weight="400">Repos</text>
+    </g>
+
+    <g transform="translate(24, 198)">
+      <rect x="2" y="1" width="12" height="5" rx="1" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <rect x="2" y="9" width="12" height="5" rx="1" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <text x="24" y="13" fill="#a1a1aa" font-size="13" font-weight="400">Cluster</text>
+    </g>
+
+    <line x1="20" y1="240" x2="200" y2="240" stroke="#27272a" stroke-width="1"/>
+
+    <g transform="translate(24, 254)">
+      <circle cx="8" cy="6" r="4" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <line x1="8" y1="10" x2="8" y2="15" stroke="#a1a1aa" stroke-width="1.5"/>
+      <text x="24" y="13" fill="#a1a1aa" font-size="13" font-weight="400">Secrets</text>
+    </g>
+
+    <g transform="translate(24, 290)">
+      <circle cx="8" cy="8" r="3" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <text x="24" y="13" fill="#a1a1aa" font-size="13" font-weight="400">Settings</text>
+    </g>
+
+    <text x="24" y="700" fill="#52525b" font-size="11">Optio v0.1.0</text>
+
+    <!-- Main Content -->
+    <g transform="translate(240, 0)">
+      <!-- Breadcrumb -->
+      <text x="24" y="30" fill="#a1a1aa" font-size="12">Tasks</text>
+      <text x="56" y="30" fill="#52525b" font-size="12">/</text>
+      <text x="66" y="30" fill="#f4f4f5" font-size="12">Fix database connection pool exhaustion</text>
+
+      <!-- Task Header -->
+      <text x="24" y="64" fill="#f4f4f5" font-size="20" font-weight="700">Fix database connection pool exhaustion</text>
+
+      <!-- Status row -->
+      <g transform="translate(24, 78)">
+        <!-- PR badge -->
+        <rect x="0" y="0" width="82" height="24" rx="12" fill="#22c55e" fill-opacity="0.1"/>
+        <circle cx="14" cy="12" r="3" fill="#22c55e"/>
+        <text x="22" y="16" fill="#22c55e" font-size="11" font-weight="500">PR Opened</text>
+
+        <!-- Repo -->
+        <text x="96" y="16" fill="#a1a1aa" font-size="12">jonwiggins/optio</text>
+
+        <!-- Agent type -->
+        <text x="216" y="16" fill="#52525b" font-size="12">·</text>
+        <text x="226" y="16" fill="#a1a1aa" font-size="12">Claude Code (Sonnet)</text>
+
+        <!-- Cost -->
+        <text x="390" y="16" fill="#52525b" font-size="12">·</text>
+        <text x="400" y="16" fill="#a1a1aa" font-size="12">$1.24</text>
+
+        <!-- Duration -->
+        <text x="440" y="16" fill="#52525b" font-size="12">·</text>
+        <text x="450" y="16" fill="#a1a1aa" font-size="12">4m 32s</text>
+
+        <!-- PR Link -->
+        <text x="510" y="16" fill="#52525b" font-size="12">·</text>
+        <text x="520" y="16" fill="#3b82f6" font-size="12" font-weight="500">#47 ↗</text>
+      </g>
+
+      <!-- Tabs -->
+      <g transform="translate(24, 118)">
+        <text x="0" y="14" fill="#6d28d9" font-size="13" font-weight="600">Logs</text>
+        <rect x="-2" y="20" width="32" height="2" rx="1" fill="#6d28d9"/>
+        <text x="52" y="14" fill="#a1a1aa" font-size="13" font-weight="400">Events</text>
+        <text x="108" y="14" fill="#a1a1aa" font-size="13" font-weight="400">Details</text>
+      </g>
+      <line x1="24" y1="140" x2="936" y2="140" stroke="#27272a" stroke-width="1"/>
+
+      <!-- Log Viewer -->
+      <rect x="24" y="148" width="912" height="556" rx="10" fill="#111113" stroke="#27272a" stroke-width="1"/>
+
+      <!-- Log entries (monospace) -->
+      <g font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="12">
+        <!-- System message -->
+        <text x="40" y="176" fill="#3b82f6" font-weight="500">ℹ system</text>
+        <text x="120" y="176" fill="#a1a1aa">Initializing Claude Code session...</text>
+        <text x="860" y="176" fill="#52525b" font-size="10">14:32:01</text>
+
+        <text x="40" y="200" fill="#3b82f6" font-weight="500">ℹ system</text>
+        <text x="120" y="200" fill="#a1a1aa">Session ID: sess_abc123def456</text>
+        <text x="860" y="200" fill="#52525b" font-size="10">14:32:02</text>
+
+        <!-- Thinking -->
+        <text x="40" y="232" fill="#a855f7" font-weight="500">◆ thinking</text>
+        <text x="140" y="232" fill="#a1a1aa">Let me analyze the database connection pool issue. I'll start</text>
+        <text x="140" y="248" fill="#a1a1aa">by reading the pool configuration and identifying the leak...</text>
+        <text x="860" y="232" fill="#52525b" font-size="10">14:32:05</text>
+
+        <!-- Tool use: Read -->
+        <rect x="36" y="264" width="888" height="56" rx="6" fill="#6d28d9" fill-opacity="0.04"/>
+        <text x="44" y="284" fill="#6d28d9" font-weight="500">⚡ tool_use</text>
+        <text x="140" y="284" fill="#d8b4fe">Read</text>
+        <text x="176" y="284" fill="#a1a1aa">apps/api/src/db/client.ts</text>
+        <text x="860" y="284" fill="#52525b" font-size="10">14:32:06</text>
+        <text x="44" y="308" fill="#52525b" font-weight="500">✓ result</text>
+        <text x="140" y="308" fill="#71717a">File content (42 lines)</text>
+
+        <!-- Tool use: Grep -->
+        <rect x="36" y="328" width="888" height="56" rx="6" fill="#6d28d9" fill-opacity="0.04"/>
+        <text x="44" y="348" fill="#6d28d9" font-weight="500">⚡ tool_use</text>
+        <text x="140" y="348" fill="#d8b4fe">Grep</text>
+        <text x="176" y="348" fill="#a1a1aa">pattern="pool\.(release|end|destroy)" path="apps/api/src/"</text>
+        <text x="860" y="348" fill="#52525b" font-size="10">14:32:08</text>
+        <text x="44" y="372" fill="#52525b" font-weight="500">✓ result</text>
+        <text x="140" y="372" fill="#71717a">Found 3 matches across 2 files</text>
+
+        <!-- Thinking -->
+        <text x="40" y="404" fill="#a855f7" font-weight="500">◆ thinking</text>
+        <text x="140" y="404" fill="#a1a1aa">I found the issue. The connection pool in task-worker.ts</text>
+        <text x="140" y="420" fill="#a1a1aa">acquires connections but doesn't release them in the error</text>
+        <text x="140" y="436" fill="#a1a1aa">path. I'll add proper cleanup in the finally block.</text>
+        <text x="860" y="404" fill="#52525b" font-size="10">14:32:10</text>
+
+        <!-- Tool use: Edit -->
+        <rect x="36" y="452" width="888" height="56" rx="6" fill="#22c55e" fill-opacity="0.04"/>
+        <text x="44" y="472" fill="#22c55e" font-weight="500">⚡ tool_use</text>
+        <text x="140" y="472" fill="#86efac">Edit</text>
+        <text x="176" y="472" fill="#a1a1aa">apps/api/src/workers/task-worker.ts</text>
+        <text x="860" y="472" fill="#52525b" font-size="10">14:32:12</text>
+        <text x="44" y="496" fill="#52525b" font-weight="500">✓ result</text>
+        <text x="140" y="496" fill="#71717a">Applied edit: added pool.release() in finally block</text>
+
+        <!-- Tool use: Edit 2 -->
+        <rect x="36" y="516" width="888" height="56" rx="6" fill="#22c55e" fill-opacity="0.04"/>
+        <text x="44" y="536" fill="#22c55e" font-weight="500">⚡ tool_use</text>
+        <text x="140" y="536" fill="#86efac">Edit</text>
+        <text x="176" y="536" fill="#a1a1aa">apps/api/src/db/client.ts</text>
+        <text x="860" y="536" fill="#52525b" font-size="10">14:32:14</text>
+        <text x="44" y="560" fill="#52525b" font-weight="500">✓ result</text>
+        <text x="140" y="560" fill="#71717a">Applied edit: set max pool size to 20, idle timeout to 30s</text>
+
+        <!-- Tool use: Bash (test) -->
+        <rect x="36" y="580" width="888" height="56" rx="6" fill="#6d28d9" fill-opacity="0.04"/>
+        <text x="44" y="600" fill="#6d28d9" font-weight="500">⚡ tool_use</text>
+        <text x="140" y="600" fill="#d8b4fe">Bash</text>
+        <text x="176" y="600" fill="#a1a1aa">pnpm turbo test</text>
+        <text x="860" y="600" fill="#52525b" font-size="10">14:32:20</text>
+        <text x="44" y="624" fill="#52525b" font-weight="500">✓ result</text>
+        <text x="140" y="624" fill="#71717a">All 14 tests passed</text>
+
+        <!-- Text output -->
+        <text x="40" y="656" fill="#fafafa" font-weight="500">◇ text</text>
+        <text x="140" y="656" fill="#e4e4e7">I've fixed the pool exhaustion issue and opened PR #47.</text>
+        <text x="860" y="656" fill="#52525b" font-size="10">14:32:28</text>
+
+        <!-- PR detected -->
+        <text x="40" y="688" fill="#22c55e" font-weight="500">✓ PR detected</text>
+        <text x="160" y="688" fill="#3b82f6">https://github.com/jonwiggins/optio/pull/47</text>
+        <text x="860" y="688" fill="#52525b" font-size="10">14:32:28</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Window chrome border -->
+  <rect width="1200" height="720" rx="12" fill="none" stroke="#3f3f46" stroke-width="1"/>
+</svg>

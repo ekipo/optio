@@ -1,0 +1,267 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+  <defs>
+    <clipPath id="round"><rect width="1200" height="720" rx="12"/></clipPath>
+    <linearGradient id="purpleGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6d28d9" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#6d28d9" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <g clip-path="url(#round)">
+    <!-- Background -->
+    <rect width="1200" height="720" fill="#0a0a0c"/>
+
+    <!-- Sidebar -->
+    <rect width="220" height="720" fill="#111113"/>
+    <line x1="220" y1="0" x2="220" y2="720" stroke="#27272a" stroke-width="1"/>
+
+    <!-- Sidebar Logo -->
+    <g transform="translate(20, 24)">
+      <!-- Zap icon -->
+      <rect width="32" height="32" rx="8" fill="#6d28d9" fill-opacity="0.15"/>
+      <path d="M22 6l-8 10h6l-2 10 8-10h-6z" fill="#6d28d9" stroke="#6d28d9" stroke-width="1.5" stroke-linejoin="round"/>
+      <text x="42" y="15" fill="#fafafa" font-size="16" font-weight="700">Optio</text>
+      <text x="42" y="28" fill="#a1a1aa" font-size="10">Agent Orchestration</text>
+    </g>
+
+    <!-- Nav Items -->
+    <!-- Active: Overview -->
+    <rect x="8" y="76" width="204" height="36" rx="8" fill="#6d28d9" fill-opacity="0.1"/>
+    <rect x="8" y="76" width="3" height="36" rx="1.5" fill="#6d28d9"/>
+    <g transform="translate(24, 86)">
+      <rect x="0" y="0" width="16" height="16" fill="none"/>
+      <rect x="1" y="1" width="6" height="6" rx="1" stroke="#6d28d9" stroke-width="1.5" fill="none"/>
+      <rect x="9" y="1" width="6" height="6" rx="1" stroke="#6d28d9" stroke-width="1.5" fill="none"/>
+      <rect x="1" y="9" width="6" height="6" rx="1" stroke="#6d28d9" stroke-width="1.5" fill="none"/>
+      <rect x="9" y="9" width="6" height="6" rx="1" stroke="#6d28d9" stroke-width="1.5" fill="none"/>
+      <text x="24" y="13" fill="#6d28d9" font-size="13" font-weight="500">Overview</text>
+    </g>
+
+    <!-- Tasks -->
+    <g transform="translate(24, 126)">
+      <rect x="1" y="1" width="14" height="14" rx="2" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <line x1="5" y1="5" x2="12" y2="5" stroke="#a1a1aa" stroke-width="1.5"/>
+      <line x1="5" y1="8" x2="10" y2="8" stroke="#a1a1aa" stroke-width="1.5"/>
+      <line x1="5" y1="11" x2="12" y2="11" stroke="#a1a1aa" stroke-width="1.5"/>
+      <text x="24" y="13" fill="#a1a1aa" font-size="13" font-weight="400">Tasks</text>
+    </g>
+
+    <!-- Repos -->
+    <g transform="translate(24, 162)">
+      <path d="M3 2h10a2 2 0 012 2v10a2 2 0 01-2 2H3" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <path d="M3 2v14" stroke="#a1a1aa" stroke-width="1.5"/>
+      <path d="M3 8h5" stroke="#a1a1aa" stroke-width="1.5"/>
+      <text x="24" y="13" fill="#a1a1aa" font-size="13" font-weight="400">Repos</text>
+    </g>
+
+    <!-- Cluster -->
+    <g transform="translate(24, 198)">
+      <rect x="2" y="1" width="12" height="5" rx="1" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <rect x="2" y="9" width="12" height="5" rx="1" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <circle cx="5" cy="3.5" r="1" fill="#a1a1aa"/>
+      <circle cx="5" cy="11.5" r="1" fill="#a1a1aa"/>
+      <text x="24" y="13" fill="#a1a1aa" font-size="13" font-weight="400">Cluster</text>
+    </g>
+
+    <!-- Divider -->
+    <line x1="20" y1="240" x2="200" y2="240" stroke="#27272a" stroke-width="1"/>
+
+    <!-- Secrets -->
+    <g transform="translate(24, 254)">
+      <circle cx="8" cy="6" r="4" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <line x1="8" y1="10" x2="8" y2="15" stroke="#a1a1aa" stroke-width="1.5"/>
+      <text x="24" y="13" fill="#a1a1aa" font-size="13" font-weight="400">Secrets</text>
+    </g>
+
+    <!-- Settings -->
+    <g transform="translate(24, 290)">
+      <circle cx="8" cy="8" r="3" stroke="#a1a1aa" stroke-width="1.5" fill="none"/>
+      <line x1="8" y1="1" x2="8" y2="3" stroke="#a1a1aa" stroke-width="1.5"/>
+      <line x1="8" y1="13" x2="8" y2="15" stroke="#a1a1aa" stroke-width="1.5"/>
+      <line x1="1" y1="8" x2="3" y2="8" stroke="#a1a1aa" stroke-width="1.5"/>
+      <line x1="13" y1="8" x2="15" y2="8" stroke="#a1a1aa" stroke-width="1.5"/>
+      <text x="24" y="13" fill="#a1a1aa" font-size="13" font-weight="400">Settings</text>
+    </g>
+
+    <!-- Version -->
+    <text x="24" y="700" fill="#52525b" font-size="11">Optio v0.1.0</text>
+
+    <!-- Main Content Area -->
+    <g transform="translate(240, 0)">
+      <!-- Header -->
+      <text x="24" y="44" fill="#f4f4f5" font-size="22" font-weight="700">Overview</text>
+      <!-- Refresh button -->
+      <rect x="884" y="24" width="32" height="32" rx="8" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <path d="M896 34a5 5 0 014.5 3m0 0h-3m3 0v-3" transform="translate(0,1)" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round"/>
+
+      <!-- Stat Cards Row -->
+      <!-- Running Tasks -->
+      <rect x="24" y="64" width="220" height="88" rx="12" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <text x="40" y="88" fill="#a1a1aa" font-size="10" font-weight="600" letter-spacing="0.5">RUNNING TASKS</text>
+      <text x="40" y="128" fill="#fafafa" font-size="32" font-weight="700">3</text>
+      <circle cx="216" cy="88" r="16" fill="#6d28d9" fill-opacity="0.1"/>
+      <path d="M210 85v6h6" fill="none" stroke="#6d28d9" stroke-width="2" stroke-linecap="round"/>
+      <path d="M216 85a6 6 0 01-6 6" fill="none" stroke="#6d28d9" stroke-width="2"/>
+
+      <!-- Needs Attention -->
+      <rect x="256" y="64" width="220" height="88" rx="12" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <text x="272" y="88" fill="#a1a1aa" font-size="10" font-weight="600" letter-spacing="0.5">NEEDS ATTENTION</text>
+      <text x="272" y="128" fill="#fafafa" font-size="32" font-weight="700">1</text>
+      <circle cx="448" cy="88" r="16" fill="#f59e0b" fill-opacity="0.1"/>
+      <path d="M448 80l-6 10h12z" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linejoin="round"/>
+      <line x1="448" y1="85" x2="448" y2="87" stroke="#f59e0b" stroke-width="1.5"/>
+      <circle cx="448" cy="89" r="0.5" fill="#f59e0b"/>
+
+      <!-- PRs Open -->
+      <rect x="488" y="64" width="220" height="88" rx="12" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <text x="504" y="88" fill="#a1a1aa" font-size="10" font-weight="600" letter-spacing="0.5">PRS OPEN</text>
+      <text x="504" y="128" fill="#fafafa" font-size="32" font-weight="700">5</text>
+      <circle cx="680" cy="88" r="16" fill="#22c55e" fill-opacity="0.1"/>
+      <circle cx="680" cy="88" r="5" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+      <path d="M675 82v-2m10 2v-2m-10 14v-2m10 2v-2" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/>
+
+      <!-- Done -->
+      <rect x="720" y="64" width="196" height="88" rx="12" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <text x="736" y="88" fill="#a1a1aa" font-size="10" font-weight="600" letter-spacing="0.5">DONE</text>
+      <text x="736" y="128" fill="#fafafa" font-size="32" font-weight="700">12</text>
+      <circle cx="888" cy="88" r="16" fill="#22c55e" fill-opacity="0.1"/>
+      <path d="M883 88l3 3 6-6" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- Section Headers -->
+      <text x="24" y="188" fill="#f4f4f5" font-size="15" font-weight="600">Recent Tasks</text>
+      <text x="130" y="188" fill="#6d28d9" font-size="12" font-weight="500" cursor="pointer">View all →</text>
+
+      <!-- Task Cards -->
+      <!-- Task 1: Running -->
+      <rect x="24" y="200" width="560" height="84" rx="10" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <text x="40" y="224" fill="#f4f4f5" font-size="13" font-weight="600">Add user authentication middleware</text>
+      <!-- Running badge -->
+      <rect x="500" y="210" width="68" height="22" rx="11" fill="#6d28d9" fill-opacity="0.1"/>
+      <circle cx="512" cy="221" r="3" fill="#6d28d9">
+        <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <text x="520" y="225" fill="#6d28d9" font-size="11" font-weight="500">Running</text>
+      <text x="40" y="244" fill="#a1a1aa" font-size="11">jonwiggins/optio</text>
+      <text x="155" y="244" fill="#52525b" font-size="11">·</text>
+      <text x="165" y="244" fill="#a1a1aa" font-size="11">Claude Code</text>
+      <text x="40" y="268" fill="#52525b" font-size="11">2 min ago</text>
+      <text x="498" y="268" fill="#a1a1aa" font-size="11">$0.42</text>
+
+      <!-- Task 2: PR Opened -->
+      <rect x="24" y="292" width="560" height="84" rx="10" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <text x="40" y="316" fill="#f4f4f5" font-size="13" font-weight="600">Fix database connection pool exhaustion</text>
+      <!-- PR badge -->
+      <rect x="520" y="302" width="48" height="22" rx="11" fill="#22c55e" fill-opacity="0.1"/>
+      <circle cx="532" cy="313" r="3" fill="#22c55e"/>
+      <text x="540" y="317" fill="#22c55e" font-size="11" font-weight="500">PR</text>
+      <text x="40" y="336" fill="#a1a1aa" font-size="11">jonwiggins/optio</text>
+      <text x="155" y="336" fill="#52525b" font-size="11">·</text>
+      <text x="165" y="336" fill="#a1a1aa" font-size="11">Claude Code</text>
+      <text x="40" y="360" fill="#52525b" font-size="11">8 min ago</text>
+      <text x="498" y="360" fill="#a1a1aa" font-size="11">$1.24</text>
+      <text x="536" y="360" fill="#3b82f6" font-size="11" font-weight="500">#47 ↗</text>
+
+      <!-- Task 3: Needs Attention -->
+      <rect x="24" y="384" width="560" height="100" rx="10" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <text x="40" y="408" fill="#f4f4f5" font-size="13" font-weight="600">Implement rate limiting for API endpoints</text>
+      <!-- Attention badge -->
+      <rect x="480" y="394" width="88" height="22" rx="11" fill="#f59e0b" fill-opacity="0.1"/>
+      <circle cx="492" cy="405" r="3" fill="#f59e0b"/>
+      <text x="500" y="409" fill="#f59e0b" font-size="11" font-weight="500">Attention</text>
+      <text x="40" y="428" fill="#a1a1aa" font-size="11">jonwiggins/optio</text>
+      <text x="155" y="428" fill="#52525b" font-size="11">·</text>
+      <text x="165" y="428" fill="#a1a1aa" font-size="11">Claude Code</text>
+      <!-- Error bar -->
+      <rect x="40" y="440" width="528" height="28" rx="6" fill="#ef4444" fill-opacity="0.05"/>
+      <text x="52" y="458" fill="#ef4444" font-size="11" font-weight="500">CI check failed: test-suite</text>
+      <rect x="480" y="444" width="76" height="20" rx="6" fill="#ef4444" fill-opacity="0.1"/>
+      <text x="494" y="458" fill="#ef4444" font-size="11" font-weight="500">Retry ↻</text>
+      <text x="40" y="475" fill="#52525b" font-size="11">15 min ago</text>
+
+      <!-- Task 4: Completed -->
+      <rect x="24" y="492" width="560" height="84" rx="10" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <text x="40" y="516" fill="#f4f4f5" font-size="13" font-weight="600">Add WebSocket heartbeat mechanism</text>
+      <!-- Done badge -->
+      <rect x="510" y="502" width="58" height="22" rx="11" fill="#22c55e" fill-opacity="0.1"/>
+      <circle cx="522" cy="513" r="3" fill="#22c55e"/>
+      <text x="530" y="517" fill="#22c55e" font-size="11" font-weight="500">Done</text>
+      <text x="40" y="536" fill="#a1a1aa" font-size="11">jonwiggins/optio</text>
+      <text x="155" y="536" fill="#52525b" font-size="11">·</text>
+      <text x="165" y="536" fill="#a1a1aa" font-size="11">Claude Code</text>
+      <text x="40" y="560" fill="#52525b" font-size="11">1 hr ago</text>
+      <text x="498" y="560" fill="#a1a1aa" font-size="11">$0.87</text>
+      <text x="536" y="560" fill="#3b82f6" font-size="11" font-weight="500">#45 ↗</text>
+
+      <!-- Task 5: Failed -->
+      <rect x="24" y="584" width="560" height="84" rx="10" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <text x="40" y="608" fill="#f4f4f5" font-size="13" font-weight="600">Refactor error handling in task worker</text>
+      <!-- Failed badge -->
+      <rect x="505" y="594" width="63" height="22" rx="11" fill="#ef4444" fill-opacity="0.1"/>
+      <circle cx="517" cy="605" r="3" fill="#ef4444"/>
+      <text x="525" y="609" fill="#ef4444" font-size="11" font-weight="500">Failed</text>
+      <text x="40" y="628" fill="#a1a1aa" font-size="11">acme/backend</text>
+      <text x="120" y="628" fill="#52525b" font-size="11">·</text>
+      <text x="130" y="628" fill="#a1a1aa" font-size="11">Claude Code</text>
+      <text x="40" y="652" fill="#52525b" font-size="11">2 hr ago</text>
+      <text x="498" y="652" fill="#a1a1aa" font-size="11">$0.31</text>
+
+      <!-- Right Column: Pods -->
+      <text x="604" y="188" fill="#f4f4f5" font-size="15" font-weight="600">Pods</text>
+
+      <!-- Pod 1 -->
+      <rect x="604" y="200" width="312" height="64" rx="10" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <circle cx="620" cy="224" r="4" fill="#22c55e"/>
+      <text x="632" y="220" fill="#f4f4f5" font-size="12" font-weight="500">optio-repo-jonwiggins-optio</text>
+      <text x="632" y="238" fill="#a1a1aa" font-size="10">3 worktrees · CPU 0.2 · Mem 384Mi</text>
+      <text x="632" y="252" fill="#52525b" font-size="10">Running for 24m</text>
+
+      <!-- Pod 2 -->
+      <rect x="604" y="272" width="312" height="64" rx="10" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <circle cx="620" cy="296" r="4" fill="#22c55e"/>
+      <text x="632" y="292" fill="#f4f4f5" font-size="12" font-weight="500">optio-repo-acme-backend</text>
+      <text x="632" y="310" fill="#a1a1aa" font-size="10">1 worktree · CPU 0.1 · Mem 256Mi</text>
+      <text x="632" y="324" fill="#52525b" font-size="10">Running for 11m</text>
+
+      <!-- Pod 3: Infra -->
+      <rect x="604" y="344" width="312" height="48" rx="10" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <circle cx="620" cy="368" r="4" fill="#3b82f6"/>
+      <text x="632" y="364" fill="#f4f4f5" font-size="12" font-weight="500">optio-postgres-0</text>
+      <text x="632" y="380" fill="#a1a1aa" font-size="10">Infrastructure · Running</text>
+
+      <rect x="604" y="400" width="312" height="48" rx="10" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <circle cx="620" cy="424" r="4" fill="#3b82f6"/>
+      <text x="632" y="420" fill="#f4f4f5" font-size="12" font-weight="500">optio-redis-0</text>
+      <text x="632" y="436" fill="#a1a1aa" font-size="10">Infrastructure · Running</text>
+
+      <!-- Events Section -->
+      <text x="604" y="480" fill="#f4f4f5" font-size="15" font-weight="600">Recent Events</text>
+
+      <rect x="604" y="492" width="312" height="160" rx="10" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+      <!-- Event entries -->
+      <circle cx="620" cy="516" r="3" fill="#22c55e"/>
+      <text x="632" y="512" fill="#a1a1aa" font-size="11">Task completed</text>
+      <text x="632" y="526" fill="#52525b" font-size="10">Add WebSocket heartbeat · 1h ago</text>
+
+      <line x1="620" y1="536" x2="896" y2="536" stroke="#27272a" stroke-width="0.5"/>
+
+      <circle cx="620" cy="556" r="3" fill="#6d28d9"/>
+      <text x="632" y="552" fill="#a1a1aa" font-size="11">Task started</text>
+      <text x="632" y="566" fill="#52525b" font-size="10">Add user auth middleware · 2m ago</text>
+
+      <line x1="620" y1="576" x2="896" y2="576" stroke="#27272a" stroke-width="0.5"/>
+
+      <circle cx="620" cy="596" r="3" fill="#f59e0b"/>
+      <text x="632" y="592" fill="#a1a1aa" font-size="11">CI check failed</text>
+      <text x="632" y="606" fill="#52525b" font-size="10">Implement rate limiting · 15m ago</text>
+
+      <line x1="620" y1="616" x2="896" y2="616" stroke="#27272a" stroke-width="0.5"/>
+
+      <circle cx="620" cy="636" r="3" fill="#22c55e"/>
+      <text x="632" y="632" fill="#a1a1aa" font-size="11">Pod healthy</text>
+      <text x="632" y="646" fill="#52525b" font-size="10">optio-repo-acme-backend · 30m ago</text>
+    </g>
+  </g>
+
+  <!-- Window chrome border -->
+  <rect width="1200" height="720" rx="12" fill="none" stroke="#3f3f46" stroke-width="1"/>
+</svg>
