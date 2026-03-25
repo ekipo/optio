@@ -29,4 +29,4 @@ Update Helm chart defaults:
 
 ---
 
-*Optio Task ID: 8fd19594-a893-40d5-83c3-ddd95e3033ee*
+_Optio Task ID: 8fd19594-a893-40d5-83c3-ddd95e3033ee_
