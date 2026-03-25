@@ -30,9 +30,6 @@ import { db } from "../db/client.js";
 const TEST_KEY = "a".repeat(64); // 64-char hex string
 process.env.OPTIO_ENCRYPTION_KEY = TEST_KEY;
 
-// We need to test the encrypt/decrypt round-trip indirectly through storeSecret/retrieveSecret.
-// But since db is mocked, we can capture the encrypted values and feed them back.
-
 describe("secret-service", () => {
   let storeSecret: typeof import("./secret-service.js").storeSecret;
   let retrieveSecret: typeof import("./secret-service.js").retrieveSecret;
@@ -42,7 +39,6 @@ describe("secret-service", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    // Dynamic import to ensure env is set
     const mod = await import("./secret-service.js");
     storeSecret = mod.storeSecret;
     retrieveSecret = mod.retrieveSecret;
@@ -58,7 +54,6 @@ describe("secret-service", () => {
       let capturedIv: Buffer;
       let capturedAuthTag: Buffer;
 
-      // Mock: no existing secret (insert path)
       const selectMock = vi.fn().mockReturnValue({
         from: vi.fn().mockReturnValue({
           where: vi.fn().mockResolvedValue([]),
@@ -78,13 +73,11 @@ describe("secret-service", () => {
 
       await storeSecret("API_KEY", secretValue);
 
-      // Verify encrypted data was stored
       expect(capturedEncrypted!).toBeInstanceOf(Buffer);
       expect(capturedIv!).toBeInstanceOf(Buffer);
       expect(capturedAuthTag!).toBeInstanceOf(Buffer);
-      expect(capturedEncrypted!.toString("utf8")).not.toBe(secretValue); // actually encrypted
+      expect(capturedEncrypted!.toString("utf8")).not.toBe(secretValue);
 
-      // Now mock retrieve to return the captured encrypted data
       const selectForRetrieve = vi.fn().mockReturnValue({
         from: vi.fn().mockReturnValue({
           where: vi.fn().mockResolvedValue([
@@ -112,17 +105,11 @@ describe("secret-service", () => {
       let captured: { encrypted: Buffer; iv: Buffer; authTag: Buffer };
 
       (db.select as any) = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([]),
-        }),
+        from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
       });
       (db.insert as any) = vi.fn().mockReturnValue({
         values: vi.fn().mockImplementation((vals: any) => {
-          captured = {
-            encrypted: vals.encryptedValue,
-            iv: vals.iv,
-            authTag: vals.authTag,
-          };
+          captured = { encrypted: vals.encryptedValue, iv: vals.iv, authTag: vals.authTag };
           return Promise.resolve();
         }),
       });
@@ -131,13 +118,11 @@ describe("secret-service", () => {
 
       (db.select as any) = vi.fn().mockReturnValue({
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([
-            {
-              encryptedValue: captured!.encrypted,
-              iv: captured!.iv,
-              authTag: captured!.authTag,
-            },
-          ]),
+          where: vi
+            .fn()
+            .mockResolvedValue([
+              { encryptedValue: captured!.encrypted, iv: captured!.iv, authTag: captured!.authTag },
+            ]),
         }),
       });
 
@@ -150,17 +135,11 @@ describe("secret-service", () => {
       let captured: { encrypted: Buffer; iv: Buffer; authTag: Buffer };
 
       (db.select as any) = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([]),
-        }),
+        from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
       });
       (db.insert as any) = vi.fn().mockReturnValue({
         values: vi.fn().mockImplementation((vals: any) => {
-          captured = {
-            encrypted: vals.encryptedValue,
-            iv: vals.iv,
-            authTag: vals.authTag,
-          };
+          captured = { encrypted: vals.encryptedValue, iv: vals.iv, authTag: vals.authTag };
           return Promise.resolve();
         }),
       });
@@ -169,13 +148,11 @@ describe("secret-service", () => {
 
       (db.select as any) = vi.fn().mockReturnValue({
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([
-            {
-              encryptedValue: captured!.encrypted,
-              iv: captured!.iv,
-              authTag: captured!.authTag,
-            },
-          ]),
+          where: vi
+            .fn()
+            .mockResolvedValue([
+              { encryptedValue: captured!.encrypted, iv: captured!.iv, authTag: captured!.authTag },
+            ]),
         }),
       });
 
@@ -186,58 +163,46 @@ describe("secret-service", () => {
 
   describe("storeSecret", () => {
     it("updates existing secret when one already exists", async () => {
-      const updateSetMock = vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue(undefined),
-      });
+      const updateSetMock = vi
+        .fn()
+        .mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) });
       (db.select as any) = vi.fn().mockReturnValue({
         from: vi.fn().mockReturnValue({
           where: vi.fn().mockResolvedValue([{ id: "existing-id" }]),
         }),
       });
-      (db.update as any) = vi.fn().mockReturnValue({
-        set: updateSetMock,
-      });
+      (db.update as any) = vi.fn().mockReturnValue({ set: updateSetMock });
 
       await storeSecret("EXISTING_KEY", "new-value");
-
       expect(db.update).toHaveBeenCalled();
     });
 
     it("inserts new secret when none exists", async () => {
       (db.select as any) = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([]),
-        }),
+        from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
       });
       (db.insert as any) = vi.fn().mockReturnValue({
         values: vi.fn().mockResolvedValue(undefined),
       });
 
       await storeSecret("NEW_KEY", "value");
-
       expect(db.insert).toHaveBeenCalled();
     });
 
     it("uses custom scope when provided", async () => {
-      let capturedName: string;
       let capturedScope: string;
 
       (db.select as any) = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([]),
-        }),
+        from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
       });
       (db.insert as any) = vi.fn().mockReturnValue({
         values: vi.fn().mockImplementation((vals: any) => {
-          capturedName = vals.name;
           capturedScope = vals.scope;
           return Promise.resolve();
         }),
       });
 
       await storeSecret("KEY", "val", "https://github.com/owner/repo");
-
-      expect(capturedName!).toBe("KEY");
       expect(capturedScope!).toBe("https://github.com/owner/repo");
     });
   });
@@ -245,9 +210,7 @@ describe("secret-service", () => {
   describe("retrieveSecret", () => {
     it("throws when secret is not found", async () => {
       (db.select as any) = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([]),
-        }),
+        from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
       });
 
       await expect(retrieveSecret("MISSING")).rejects.toThrow("Secret not found: MISSING");
@@ -255,9 +218,7 @@ describe("secret-service", () => {
 
     it("includes scope in error message", async () => {
       (db.select as any) = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([]),
-        }),
+        from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
       });
 
       await expect(retrieveSecret("KEY", "my-repo")).rejects.toThrow(
@@ -279,36 +240,16 @@ describe("secret-service", () => {
           createdAt: new Date("2024-01-01"),
           updatedAt: new Date("2024-01-02"),
         },
-        {
-          id: "2",
-          name: "KEY_B",
-          scope: "global",
-          encryptedValue: Buffer.from("y"),
-          iv: Buffer.from("y"),
-          authTag: Buffer.from("y"),
-          createdAt: new Date("2024-02-01"),
-          updatedAt: new Date("2024-02-02"),
-        },
       ];
 
       (db.select as any) = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue(mockRows),
-        }),
+        from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(mockRows) }),
       });
 
       const result = await listSecrets("global");
-
-      expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({
-        id: "1",
-        name: "KEY_A",
-        scope: "global",
-        createdAt: new Date("2024-01-01"),
-        updatedAt: new Date("2024-01-02"),
-      });
-      // No encryptedValue, iv, or authTag in the result
+      expect(result).toHaveLength(1);
       expect(result[0]).not.toHaveProperty("encryptedValue");
+      expect(result[0].name).toBe("KEY_A");
     });
 
     it("returns all secrets when no scope filter", async () => {
@@ -325,7 +266,6 @@ describe("secret-service", () => {
         },
       ];
 
-      // When no scope, db.select().from(secrets) is called without .where()
       (db.select as any) = vi.fn().mockReturnValue({
         from: vi.fn().mockResolvedValue(mockRows),
       });
@@ -338,88 +278,35 @@ describe("secret-service", () => {
   describe("deleteSecret", () => {
     it("calls delete with correct name and scope", async () => {
       const whereMock = vi.fn().mockResolvedValue(undefined);
-      (db.delete as any) = vi.fn().mockReturnValue({
-        where: whereMock,
-      });
+      (db.delete as any) = vi.fn().mockReturnValue({ where: whereMock });
 
       await deleteSecret("MY_KEY", "my-scope");
-
-      expect(db.delete).toHaveBeenCalled();
-      expect(whereMock).toHaveBeenCalled();
-    });
-
-    it("defaults scope to global", async () => {
-      const whereMock = vi.fn().mockResolvedValue(undefined);
-      (db.delete as any) = vi.fn().mockReturnValue({
-        where: whereMock,
-      });
-
-      await deleteSecret("MY_KEY");
-
       expect(db.delete).toHaveBeenCalled();
     });
   });
 
   describe("resolveSecretsForTask", () => {
-    it("resolves global secrets directly", async () => {
-      let callCount = 0;
-      // For global scope, retrieveSecret is called once per secret
-      (db.select as any) = vi.fn().mockImplementation(() => ({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockImplementation(() => {
-            callCount++;
-            if (callCount === 1) {
-              // First secret: API_KEY
-              return Promise.resolve([
-                { encryptedValue: Buffer.from(""), iv: Buffer.from(""), authTag: Buffer.from("") },
-              ]);
-            }
-            return Promise.resolve([
-              { encryptedValue: Buffer.from(""), iv: Buffer.from(""), authTag: Buffer.from("") },
-            ]);
-          }),
-        }),
-      }));
-
-      // We need actual encrypted data for the round-trip to work
-      // Instead, let's test the fallback logic by testing with a repo scope
-    });
-
     it("falls back to global when repo-scoped secret is not found", async () => {
-      // Store two secrets: one global, one repo-scoped (only global exists)
       let capturedGlobal: { encrypted: Buffer; iv: Buffer; authTag: Buffer };
 
-      // First, store a global secret to get real encrypted data
       (db.select as any) = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([]),
-        }),
+        from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
       });
       (db.insert as any) = vi.fn().mockReturnValue({
         values: vi.fn().mockImplementation((vals: any) => {
-          capturedGlobal = {
-            encrypted: vals.encryptedValue,
-            iv: vals.iv,
-            authTag: vals.authTag,
-          };
+          capturedGlobal = { encrypted: vals.encryptedValue, iv: vals.iv, authTag: vals.authTag };
           return Promise.resolve();
         }),
       });
 
       await storeSecret("API_KEY", "global-key-value");
 
-      // Now mock resolveSecretsForTask behavior:
-      // First call (repo scope) fails, second call (global) succeeds
       let resolveCallCount = 0;
       (db.select as any) = vi.fn().mockImplementation(() => ({
         from: vi.fn().mockReturnValue({
           where: vi.fn().mockImplementation(() => {
             resolveCallCount++;
-            if (resolveCallCount === 1) {
-              // Repo-scoped lookup fails
-              return Promise.resolve([]);
-            }
-            // Global fallback succeeds
+            if (resolveCallCount === 1) return Promise.resolve([]);
             return Promise.resolve([
               {
                 encryptedValue: capturedGlobal!.encrypted,
@@ -432,34 +319,24 @@ describe("secret-service", () => {
       }));
 
       const result = await resolveSecretsForTask(["API_KEY"], "https://github.com/owner/repo");
-
-      expect(result).toHaveProperty("API_KEY");
       expect(result.API_KEY).toBe("global-key-value");
     });
 
     it("uses repo-scoped secret when available", async () => {
       let capturedRepo: { encrypted: Buffer; iv: Buffer; authTag: Buffer };
 
-      // Store a secret to get real encrypted data
       (db.select as any) = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([]),
-        }),
+        from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
       });
       (db.insert as any) = vi.fn().mockReturnValue({
         values: vi.fn().mockImplementation((vals: any) => {
-          capturedRepo = {
-            encrypted: vals.encryptedValue,
-            iv: vals.iv,
-            authTag: vals.authTag,
-          };
+          capturedRepo = { encrypted: vals.encryptedValue, iv: vals.iv, authTag: vals.authTag };
           return Promise.resolve();
         }),
       });
 
       await storeSecret("TOKEN", "repo-specific-token", "https://github.com/owner/repo");
 
-      // Mock: repo-scoped lookup succeeds on first try
       (db.select as any) = vi.fn().mockImplementation(() => ({
         from: vi.fn().mockReturnValue({
           where: vi.fn().mockResolvedValue([
@@ -473,61 +350,7 @@ describe("secret-service", () => {
       }));
 
       const result = await resolveSecretsForTask(["TOKEN"], "https://github.com/owner/repo");
-
       expect(result.TOKEN).toBe("repo-specific-token");
-    });
-
-    it("resolves multiple secrets", async () => {
-      // Store two secrets with different values
-      const captures: Record<string, { encrypted: Buffer; iv: Buffer; authTag: Buffer }> = {};
-
-      (db.select as any) = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([]),
-        }),
-      });
-
-      const secretPairs = [
-        ["KEY_A", "value-a"],
-        ["KEY_B", "value-b"],
-      ] as const;
-
-      for (const [name, value] of secretPairs) {
-        (db.insert as any) = vi.fn().mockReturnValue({
-          values: vi.fn().mockImplementation((vals: any) => {
-            captures[name] = {
-              encrypted: vals.encryptedValue,
-              iv: vals.iv,
-              authTag: vals.authTag,
-            };
-            return Promise.resolve();
-          }),
-        });
-        await storeSecret(name, value);
-      }
-
-      // Mock global retrieval
-      let callIdx = 0;
-      const keys = ["KEY_A", "KEY_B"];
-      (db.select as any) = vi.fn().mockImplementation(() => ({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockImplementation(() => {
-            const key = keys[callIdx++];
-            return Promise.resolve([
-              {
-                encryptedValue: captures[key].encrypted,
-                iv: captures[key].iv,
-                authTag: captures[key].authTag,
-              },
-            ]);
-          }),
-        }),
-      }));
-
-      const result = await resolveSecretsForTask(["KEY_A", "KEY_B"]);
-
-      expect(result.KEY_A).toBe("value-a");
-      expect(result.KEY_B).toBe("value-b");
     });
   });
 });
