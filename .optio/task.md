@@ -7,6 +7,7 @@ Improve test coverage for critical paths
 Current test coverage is estimated at 10-15%, focused on shared utilities. The core orchestration paths have zero tests.
 
 ## What's tested today
+
 - State machine transitions (`state-machine.test.ts`)
 - Error classifier patterns (`error-classifier.test.ts`)
 - Prompt template rendering (`prompt-template.test.ts`)
@@ -14,6 +15,7 @@ Current test coverage is estimated at 10-15%, focused on shared utilities. The c
 - PR watcher decision logic (`pr-watcher-worker.test.ts`)
 
 ## Critical untested paths (priority order)
+
 1. **Task worker** — the main orchestration loop: concurrency checks, pod provisioning, agent execution, result handling (~200+ lines of complex logic)
 2. **Repo pool service** — pod creation, worktree exec, cleanup (~150+ lines)
 3. **Secret encryption/decryption** — round-trip correctness
@@ -22,11 +24,13 @@ Current test coverage is estimated at 10-15%, focused on shared utilities. The c
 6. **API routes** — at minimum: task CRUD, secrets CRUD, bulk operations
 
 ## Acceptance criteria
+
 - Task worker has unit tests covering: concurrency limiting, retry logic, state transitions on success/failure
 - Repo pool service has tests for pod lifecycle
 - Secret encryption has round-trip test
 - Overall coverage meaningfully improved (target: 40%+ of backend logic)
 
 ---
-*Optio Task ID: 52315170-01a9-460e-85fb-c6c57232046d*
-*Source: [github](https://github.com/jonwiggins/optio/issues/11)*
+
+_Optio Task ID: 52315170-01a9-460e-85fb-c6c57232046d_
+_Source: [github](https://github.com/jonwiggins/optio/issues/11)_

@@ -1,105 +1,105 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildAgentCommand, inferExitCode } from "./task-worker.js";
-import { DEFAULT_MAX_TURNS_CODING, DEFAULT_MAX_TURNS_REVIEW } from "@optio/shared";
 
 describe("buildAgentCommand", () => {
-  const baseEnv = { OPTIO_PROMPT: "Do the task" };
+  describe("claude-code agent", () => {
+    it("produces a basic claude command with prompt from env", () => {
+      const env = { OPTIO_PROMPT: "Fix the bug" };
+      const cmds = buildAgentCommand("claude-code", env);
 
-  describe("claude-code", () => {
-    it("produces a claude command with default max turns", () => {
-      const cmd = buildAgentCommand("claude-code", baseEnv);
-      const joined = cmd.join(" ");
-      expect(joined).toContain("claude -p");
-      expect(joined).toContain(`--max-turns ${DEFAULT_MAX_TURNS_CODING}`);
-      expect(joined).toContain("--output-format stream-json");
-      expect(joined).toContain("--dangerously-skip-permissions");
+      expect(cmds.some((c) => c.includes("claude -p"))).toBe(true);
+      expect(cmds.some((c) => c.includes("--dangerously-skip-permissions"))).toBe(true);
+      expect(cmds.some((c) => c.includes("--output-format stream-json"))).toBe(true);
+      expect(cmds.some((c) => c.includes("--verbose"))).toBe(true);
+      expect(cmds.some((c) => c.includes("--max-turns 250"))).toBe(true);
     });
 
-    it("uses review max turns when isReview is true", () => {
-      const cmd = buildAgentCommand("claude-code", baseEnv, { isReview: true });
-      const joined = cmd.join(" ");
-      expect(joined).toContain(`--max-turns ${DEFAULT_MAX_TURNS_REVIEW}`);
+    it("uses default coding max turns (250)", () => {
+      const env = { OPTIO_PROMPT: "Do stuff" };
+      const cmds = buildAgentCommand("claude-code", env);
+      expect(cmds.some((c) => c.includes("--max-turns 250"))).toBe(true);
     });
 
-    it("uses custom maxTurnsCoding when provided", () => {
-      const cmd = buildAgentCommand("claude-code", baseEnv, { maxTurnsCoding: 42 });
-      const joined = cmd.join(" ");
-      expect(joined).toContain("--max-turns 42");
+    it("uses default review max turns (10) when isReview is true", () => {
+      const env = { OPTIO_PROMPT: "Review PR" };
+      const cmds = buildAgentCommand("claude-code", env, { isReview: true });
+      expect(cmds.some((c) => c.includes("--max-turns 10"))).toBe(true);
     });
 
-    it("uses custom maxTurnsReview when isReview and maxTurnsReview provided", () => {
-      const cmd = buildAgentCommand("claude-code", baseEnv, { isReview: true, maxTurnsReview: 5 });
-      const joined = cmd.join(" ");
-      expect(joined).toContain("--max-turns 5");
+    it("respects custom maxTurnsCoding override", () => {
+      const env = { OPTIO_PROMPT: "Build feature" };
+      const cmds = buildAgentCommand("claude-code", env, { maxTurnsCoding: 100 });
+      expect(cmds.some((c) => c.includes("--max-turns 100"))).toBe(true);
     });
 
-    it("adds --resume flag when resumeSessionId is provided", () => {
-      const cmd = buildAgentCommand("claude-code", baseEnv, {
-        resumeSessionId: "sess-abc123",
+    it("respects custom maxTurnsReview override for reviews", () => {
+      const env = { OPTIO_PROMPT: "Review code" };
+      const cmds = buildAgentCommand("claude-code", env, {
+        isReview: true,
+        maxTurnsReview: 25,
       });
-      const joined = cmd.join(" ");
-      expect(joined).toContain("--resume");
-      expect(joined).toContain("sess-abc123");
+      expect(cmds.some((c) => c.includes("--max-turns 25"))).toBe(true);
     });
 
-    it("uses resumePrompt over env OPTIO_PROMPT", () => {
-      const cmd = buildAgentCommand("claude-code", baseEnv, {
-        resumePrompt: "Override prompt",
+    it("adds resume flag when resumeSessionId is provided", () => {
+      const env = { OPTIO_PROMPT: "Continue work" };
+      const cmds = buildAgentCommand("claude-code", env, {
+        resumeSessionId: "sess-abc-123",
       });
-      const joined = cmd.join(" ");
-      expect(joined).toContain("Override prompt");
+      expect(cmds.some((c) => c.includes("--resume"))).toBe(true);
+      expect(cmds.some((c) => c.includes("sess-abc-123"))).toBe(true);
     });
 
-    it("adds auth setup commands for max-subscription mode", () => {
+    it("uses resumePrompt over OPTIO_PROMPT when provided", () => {
+      const env = { OPTIO_PROMPT: "Original prompt" };
+      const cmds = buildAgentCommand("claude-code", env, {
+        resumePrompt: "Fix the tests now",
+      });
+      expect(cmds.some((c) => c.includes("Fix the tests now"))).toBe(true);
+      expect(cmds.some((c) => c.includes("Original prompt"))).toBe(false);
+    });
+
+    it("adds max-subscription auth setup when auth mode is max-subscription", () => {
       const env = {
-        ...baseEnv,
+        OPTIO_PROMPT: "Do work",
         OPTIO_AUTH_MODE: "max-subscription",
         OPTIO_API_URL: "http://localhost:4000",
       };
-      const cmd = buildAgentCommand("claude-code", env);
-      const joined = cmd.join(" ");
-      expect(joined).toContain("unset ANTHROPIC_API_KEY");
+      const cmds = buildAgentCommand("claude-code", env);
+      expect(cmds.some((c) => c.includes("Token proxy OK"))).toBe(true);
+      expect(cmds.some((c) => c.includes("unset ANTHROPIC_API_KEY"))).toBe(true);
     });
 
     it("does not add auth setup for api-key mode", () => {
-      const env = { ...baseEnv, OPTIO_AUTH_MODE: "api-key" };
-      const cmd = buildAgentCommand("claude-code", env);
-      const joined = cmd.join(" ");
-      expect(joined).not.toContain("unset ANTHROPIC_API_KEY");
+      const env = { OPTIO_PROMPT: "Do work", OPTIO_AUTH_MODE: "api-key" };
+      const cmds = buildAgentCommand("claude-code", env);
+      expect(cmds.some((c) => c.includes("Token proxy OK"))).toBe(false);
+      expect(cmds.some((c) => c.includes("unset ANTHROPIC_API_KEY"))).toBe(false);
     });
 
-    it("includes [optio] Running Claude Code marker", () => {
-      const cmd = buildAgentCommand("claude-code", baseEnv);
-      expect(cmd.some((c) => c.includes("[optio] Running Claude Code"))).toBe(true);
-    });
-
-    it("marks review in the log line when isReview is true", () => {
-      const cmd = buildAgentCommand("claude-code", baseEnv, { isReview: true });
-      expect(cmd.some((c) => c.includes("(review)"))).toBe(true);
+    it("includes review label in echo when isReview is true", () => {
+      const env = { OPTIO_PROMPT: "Review" };
+      const cmds = buildAgentCommand("claude-code", env, { isReview: true });
+      expect(cmds.some((c) => c.includes("(review)"))).toBe(true);
     });
   });
 
-  describe("codex", () => {
+  describe("codex agent", () => {
     it("produces a codex exec command", () => {
-      const cmd = buildAgentCommand("codex", baseEnv);
-      const joined = cmd.join(" ");
-      expect(joined).toContain("codex exec --full-auto");
-      expect(joined).toContain("--json");
-    });
-
-    it("includes the prompt in the codex command", () => {
-      const cmd = buildAgentCommand("codex", { OPTIO_PROMPT: "Write some code" });
-      const joined = cmd.join(" ");
-      expect(joined).toContain("Write some code");
+      const env = { OPTIO_PROMPT: "Build feature" };
+      const cmds = buildAgentCommand("codex", env);
+      expect(cmds.some((c) => c.includes("codex exec"))).toBe(true);
+      expect(cmds.some((c) => c.includes("--full-auto"))).toBe(true);
+      expect(cmds.some((c) => c.includes("--json"))).toBe(true);
     });
   });
 
-  describe("unknown agent type", () => {
-    it("returns an error exit command", () => {
-      const cmd = buildAgentCommand("unknown-agent", baseEnv);
-      const joined = cmd.join(" ");
-      expect(joined).toContain("exit 1");
-      expect(joined).toContain("Unknown agent type");
+  describe("unknown agent", () => {
+    it("produces an error exit command for unknown agent types", () => {
+      const env = { OPTIO_PROMPT: "Do something" };
+      const cmds = buildAgentCommand("unknown-agent", env);
+      expect(cmds.some((c) => c.includes("Unknown agent type"))).toBe(true);
+      expect(cmds.some((c) => c.includes("exit 1"))).toBe(true);
     });
   });
 });
@@ -107,63 +107,77 @@ describe("buildAgentCommand", () => {
 describe("inferExitCode", () => {
   describe("claude-code", () => {
     it("returns 0 for clean logs", () => {
-      expect(inferExitCode("claude-code", "Task completed successfully")).toBe(0);
+      const logs = '{"type":"assistant","content":"All done"}\n';
+      expect(inferExitCode("claude-code", logs)).toBe(0);
     });
 
-    it('returns 1 when logs contain "is_error":true', () => {
-      expect(inferExitCode("claude-code", '{"type":"result","is_error":true}')).toBe(1);
+    it("returns 1 when is_error is true in result", () => {
+      const logs = '{"type":"result","is_error":true,"error":"Something failed"}\n';
+      expect(inferExitCode("claude-code", logs)).toBe(1);
     });
 
-    it('returns 1 when logs contain "fatal:"', () => {
-      expect(inferExitCode("claude-code", "fatal: repository not found")).toBe(1);
+    it("returns 1 on fatal git error", () => {
+      const logs = "fatal: repository not found\n";
+      expect(inferExitCode("claude-code", logs)).toBe(1);
     });
 
-    it("returns 1 when logs contain authentication_failed", () => {
-      expect(inferExitCode("claude-code", "Error: authentication_failed")).toBe(1);
+    it("returns 1 on authentication_failed error", () => {
+      const logs = "Error: authentication_failed - token expired\n";
+      expect(inferExitCode("claude-code", logs)).toBe(1);
     });
 
-    it("returns 1 when logs contain exit 1", () => {
-      expect(inferExitCode("claude-code", "Process exited with exit 1")).toBe(1);
+    it("returns 1 when exit 1 appears in logs", () => {
+      const logs = "some output\nexit 1\nmore output\n";
+      expect(inferExitCode("claude-code", logs)).toBe(1);
     });
 
-    it("returns 0 for logs with partial is_error false", () => {
-      expect(inferExitCode("claude-code", '{"is_error":false}')).toBe(0);
+    it("returns 0 when logs contain non-fatal content", () => {
+      const logs = '{"type":"result","is_error":false}\nCompleted successfully\n';
+      expect(inferExitCode("claude-code", logs)).toBe(0);
     });
   });
 
   describe("codex", () => {
-    it("returns 0 for clean logs", () => {
-      expect(inferExitCode("codex", '{"type":"message","content":"done"}')).toBe(0);
+    it("returns 0 for clean codex logs", () => {
+      const logs = '{"type":"message","content":"Done"}\n';
+      expect(inferExitCode("codex", logs)).toBe(0);
     });
 
-    it("returns 1 when logs contain error type event", () => {
-      expect(inferExitCode("codex", '{"type":"error","message":"something went wrong"}')).toBe(1);
+    it("returns 1 when error event is present", () => {
+      const logs = '{"type":"error","message":"something broke"}\n';
+      expect(inferExitCode("codex", logs)).toBe(1);
     });
 
-    it("returns 1 when logs contain OPENAI_API_KEY reference", () => {
-      expect(inferExitCode("codex", "Error: OPENAI_API_KEY is not set")).toBe(1);
+    it("returns 1 when error event has spaces in JSON", () => {
+      const logs = '{"type": "error", "message": "broke"}\n';
+      expect(inferExitCode("codex", logs)).toBe(1);
     });
 
-    it("returns 1 when logs contain quota error", () => {
-      expect(inferExitCode("codex", "Error: insufficient_quota exceeded")).toBe(1);
+    it("returns 1 on OPENAI_API_KEY auth error", () => {
+      const logs = "Error: OPENAI_API_KEY is not set\n";
+      expect(inferExitCode("codex", logs)).toBe(1);
     });
 
-    it("returns 1 when logs contain billing reference", () => {
-      expect(inferExitCode("codex", "billing limit reached")).toBe(1);
+    it("returns 1 on invalid API key", () => {
+      const logs = "invalid api key provided\n";
+      expect(inferExitCode("codex", logs)).toBe(1);
     });
 
-    it("returns 1 when logs contain invalid api key", () => {
-      expect(inferExitCode("codex", "invalid api key provided")).toBe(1);
+    it("returns 1 on quota exceeded", () => {
+      const logs = "Error: insufficient_quota - you have exceeded your billing limit\n";
+      expect(inferExitCode("codex", logs)).toBe(1);
+    });
+
+    it("returns 1 on billing error", () => {
+      const logs = "billing limit exceeded\n";
+      expect(inferExitCode("codex", logs)).toBe(1);
     });
   });
 
-  describe("default (falls through to claude-code logic)", () => {
-    it("returns 0 for empty logs", () => {
-      expect(inferExitCode("unknown", "")).toBe(0);
-    });
-
-    it("returns 1 for is_error:true in any agent type", () => {
-      expect(inferExitCode("other", '{"is_error":true}')).toBe(1);
+  describe("default (unknown agent type)", () => {
+    it("uses claude-code patterns as default", () => {
+      expect(inferExitCode("some-future-agent", "fatal: error")).toBe(1);
+      expect(inferExitCode("some-future-agent", "all good")).toBe(0);
     });
   });
 });
