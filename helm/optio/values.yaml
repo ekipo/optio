@@ -8,6 +8,9 @@ api:
     pullPolicy: IfNotPresent
   replicas: 1
   port: 4000
+  service:
+    type: ClusterIP    # Set to NodePort for local K8s dev (Docker Desktop, kind, minikube)
+    nodePort: ""       # Fixed node port when type=NodePort, e.g. 4000
   resources:
     requests:
       cpu: 250m
@@ -37,6 +40,9 @@ web:
     pullPolicy: IfNotPresent
   replicas: 1
   port: 3000
+  service:
+    type: ClusterIP    # Set to NodePort for local K8s dev (Docker Desktop, kind, minikube)
+    nodePort: ""       # Fixed node port when type=NodePort, e.g. 3100
   resources:
     requests:
       cpu: 100m
@@ -50,10 +56,10 @@ web:
 # Agent containers
 agent:
   image:
-    repository: optio-agent
+    repository: ghcr.io/jonwiggins/optio-agent-node
     tag: latest
-    pullPolicy: Never  # Use "IfNotPresent" or "Always" for registry images
-  imagePullPolicy: Never
+    pullPolicy: IfNotPresent  # Use "Never" for local images
+  imagePullPolicy: IfNotPresent  # Use "Never" for local images
   # PVC template for repo pod home directories.
   # These PVCs are created dynamically by the API server (one per repo pod
   # instance), but this template controls the storage class and default size.

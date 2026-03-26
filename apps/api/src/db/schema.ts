@@ -12,6 +12,59 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
+// ── Workspace enums ─────────────────────────────────────────────────────────
+
+export const workspaceRoleEnum = pgEnum("workspace_role", ["admin", "member", "viewer"]);
+
+// ── Users (defined early for FK references) ─────────────────────────────────
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  provider: text("provider").notNull(), // "github" | "google" | "gitlab"
+  externalId: text("external_id").notNull(),
+  email: text("email").notNull(),
+  displayName: text("display_name").notNull(),
+  avatarUrl: text("avatar_url"),
+  defaultWorkspaceId: uuid("default_workspace_id"), // last-used workspace
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ── Workspaces ──────────────────────────────────────────────────────────────
+
+export const workspaces = pgTable("workspaces", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const workspaceMembers = pgTable(
+  "workspace_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: workspaceRoleEnum("role").notNull().default("member"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("workspace_members_workspace_user_key").on(table.workspaceId, table.userId),
+    index("workspace_members_user_idx").on(table.userId),
+    index("workspace_members_workspace_idx").on(table.workspaceId),
+  ],
+);
+
+// ── Task enums ──────────────────────────────────────────────────────────────
+
 export const taskStateEnum = pgEnum("task_state", [
   "pending",
   "queued",
@@ -61,6 +114,7 @@ export const tasks = pgTable(
     worktreeState: text("worktree_state"), // "active" | "dirty" | "reset" | "preserved" | "removed"
     lastPodId: uuid("last_pod_id"), // last pod this task ran on (for same-pod retry affinity)
     createdBy: uuid("created_by"), // nullable FK to users (null when auth is disabled)
+    workspaceId: uuid("workspace_id"), // nullable for backward compat; new tasks should always set this
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     startedAt: timestamp("started_at", { withTimezone: true }),
@@ -71,6 +125,7 @@ export const tasks = pgTable(
     index("tasks_state_idx").on(table.state),
     index("tasks_parent_task_id_idx").on(table.parentTaskId),
     index("tasks_created_at_idx").on(table.createdAt.desc()),
+    index("tasks_workspace_id_idx").on(table.workspaceId),
   ],
 );
 
@@ -85,6 +140,7 @@ export const taskEvents = pgTable(
     toState: taskStateEnum("to_state").notNull(),
     trigger: text("trigger").notNull(),
     message: text("message"),
+    userId: uuid("user_id").references(() => users.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("task_events_task_id_idx").on(table.taskId)],
@@ -121,42 +177,53 @@ export const secrets = pgTable(
     encryptedValue: bytea("encrypted_value").notNull(),
     iv: bytea("iv").notNull(),
     authTag: bytea("auth_tag").notNull(),
+    workspaceId: uuid("workspace_id"), // nullable for backward compat
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [unique("secrets_name_scope_key").on(table.name, table.scope)],
+  (table) => [unique("secrets_name_scope_ws_key").on(table.name, table.scope, table.workspaceId)],
 );
 
-export const repos = pgTable("repos", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  repoUrl: text("repo_url").notNull().unique(),
-  fullName: text("full_name").notNull(),
-  defaultBranch: text("default_branch").notNull().default("main"),
-  isPrivate: boolean("is_private").notNull().default(false),
-  imagePreset: text("image_preset").default("base"),
-  extraPackages: text("extra_packages"), // comma-separated
-  setupCommands: text("setup_commands"), // shell commands run at pod startup after clone
-  customDockerfile: text("custom_dockerfile"), // full Dockerfile override (advanced)
-  autoMerge: boolean("auto_merge").notNull().default(false),
-  promptTemplateOverride: text("prompt_template_override"), // null = use global default
-  claudeModel: text("claude_model").default("opus"),
-  claudeContextWindow: text("claude_context_window").default("1m"), // "200k" or "1m"
-  claudeThinking: boolean("claude_thinking").notNull().default(true),
-  claudeEffort: text("claude_effort").default("high"), // "low", "medium", "high"
-  maxTurnsCoding: integer("max_turns_coding"), // null = use global default (250)
-  maxTurnsReview: integer("max_turns_review"), // null = use global default (10)
-  autoResume: boolean("auto_resume").notNull().default(false),
-  maxConcurrentTasks: integer("max_concurrent_tasks").notNull().default(2),
-  maxPodInstances: integer("max_pod_instances").notNull().default(1),
-  maxAgentsPerPod: integer("max_agents_per_pod").notNull().default(2),
-  reviewEnabled: boolean("review_enabled").notNull().default(false),
-  reviewTrigger: text("review_trigger").default("on_ci_pass"), // "manual" | "on_pr" | "on_ci_pass"
-  reviewPromptTemplate: text("review_prompt_template"), // null = use default
-  testCommand: text("test_command"), // "npm test", "cargo test", etc.
-  reviewModel: text("review_model").default("sonnet"), // can use cheaper model for reviews
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const repos = pgTable(
+  "repos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    repoUrl: text("repo_url").notNull(),
+    workspaceId: uuid("workspace_id"), // nullable for backward compat
+    fullName: text("full_name").notNull(),
+    defaultBranch: text("default_branch").notNull().default("main"),
+    isPrivate: boolean("is_private").notNull().default(false),
+    imagePreset: text("image_preset").default("base"),
+    extraPackages: text("extra_packages"), // comma-separated
+    setupCommands: text("setup_commands"), // shell commands run at pod startup after clone
+    customDockerfile: text("custom_dockerfile"), // full Dockerfile override (advanced)
+    autoMerge: boolean("auto_merge").notNull().default(false),
+    promptTemplateOverride: text("prompt_template_override"), // null = use global default
+    claudeModel: text("claude_model").default("opus"),
+    claudeContextWindow: text("claude_context_window").default("1m"), // "200k" or "1m"
+    claudeThinking: boolean("claude_thinking").notNull().default(true),
+    claudeEffort: text("claude_effort").default("high"), // "low", "medium", "high"
+    maxTurnsCoding: integer("max_turns_coding"), // null = use global default (250)
+    maxTurnsReview: integer("max_turns_review"), // null = use global default (10)
+    autoResume: boolean("auto_resume").notNull().default(false),
+    maxConcurrentTasks: integer("max_concurrent_tasks").notNull().default(2),
+    maxPodInstances: integer("max_pod_instances").notNull().default(1),
+    maxAgentsPerPod: integer("max_agents_per_pod").notNull().default(2),
+    reviewEnabled: boolean("review_enabled").notNull().default(false),
+    reviewTrigger: text("review_trigger").default("on_ci_pass"), // "manual" | "on_pr" | "on_ci_pass"
+    reviewPromptTemplate: text("review_prompt_template"), // null = use default
+    testCommand: text("test_command"), // "npm test", "cargo test", etc.
+    reviewModel: text("review_model").default("sonnet"), // can use cheaper model for reviews
+    maxAutoResumes: integer("max_auto_resumes"), // null = use OPTIO_MAX_AUTO_RESUMES env var or default (10)
+    slackWebhookUrl: text("slack_webhook_url"), // Slack incoming webhook URL
+    slackChannel: text("slack_channel"), // override channel (optional)
+    slackNotifyOn: jsonb("slack_notify_on").$type<string[]>(), // e.g. ["completed","failed","pr_opened","needs_attention"]
+    slackEnabled: boolean("slack_enabled").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("repos_url_workspace_key").on(table.repoUrl, table.workspaceId)],
+);
 
 export const ticketProviders = pgTable("ticket_providers", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -179,6 +246,7 @@ export const repoPods = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     repoUrl: text("repo_url").notNull(),
+    workspaceId: uuid("workspace_id"), // nullable for backward compat
     repoBranch: text("repo_branch").notNull().default("main"),
     instanceIndex: integer("instance_index").notNull().default(0),
     podName: text("pod_name"),
@@ -203,18 +271,6 @@ export const podHealthEvents = pgTable("pod_health_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  provider: text("provider").notNull(), // "github" | "google" | "gitlab"
-  externalId: text("external_id").notNull(),
-  email: text("email").notNull(),
-  displayName: text("display_name").notNull(),
-  avatarUrl: text("avatar_url"),
-  lastLoginAt: timestamp("last_login_at", { withTimezone: true }).notNull().defaultNow(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
 export const sessions = pgTable("sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
@@ -236,6 +292,7 @@ export const webhookEventEnum = pgEnum("webhook_event", [
 export const webhooks = pgTable("webhooks", {
   id: uuid("id").primaryKey().defaultRandom(),
   url: text("url").notNull(),
+  workspaceId: uuid("workspace_id"), // nullable for backward compat
   events: jsonb("events").$type<string[]>().notNull(), // array of webhook_event values
   secret: text("secret"), // HMAC-SHA256 signing secret (plaintext; only used for outbound signing)
   description: text("description"),
@@ -259,6 +316,47 @@ export const webhookDeliveries = pgTable("webhook_deliveries", {
   error: text("error"),
   deliveredAt: timestamp("delivered_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const interactiveSessionStateEnum = pgEnum("interactive_session_state", ["active", "ended"]);
+
+export const interactiveSessions = pgTable(
+  "interactive_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    repoUrl: text("repo_url").notNull(),
+    userId: uuid("user_id"),
+    worktreePath: text("worktree_path"),
+    branch: text("branch").notNull(),
+    state: interactiveSessionStateEnum("state").notNull().default("active"),
+    podId: uuid("pod_id"),
+    costUsd: text("cost_usd"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("interactive_sessions_repo_url_idx").on(table.repoUrl),
+    index("interactive_sessions_state_idx").on(table.state),
+    index("interactive_sessions_user_id_idx").on(table.userId),
+  ],
+);
+
+export const sessionPrs = pgTable(
+  "session_prs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => interactiveSessions.id, { onDelete: "cascade" }),
+    prUrl: text("pr_url").notNull(),
+    prNumber: integer("pr_number").notNull(),
+    prState: text("pr_state"), // "open" | "merged" | "closed"
+    prChecksStatus: text("pr_checks_status"), // "pending" | "passing" | "failing" | "none"
+    prReviewStatus: text("pr_review_status"), // "approved" | "changes_requested" | "pending" | "none"
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("session_prs_session_id_idx").on(table.sessionId)],
+);
 
 export const schedules = pgTable(
   "schedules",
@@ -302,6 +400,33 @@ export const scheduleRuns = pgTable(
   },
   (table) => [index("schedule_runs_schedule_id_idx").on(table.scheduleId)],
 );
+
+export const taskComments = pgTable(
+  "task_comments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    taskId: uuid("task_id")
+      .notNull()
+      .references(() => tasks.id),
+    userId: uuid("user_id").references(() => users.id),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("task_comments_task_id_idx").on(table.taskId)],
+);
+
+export const taskTemplates = pgTable("task_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  repoUrl: text("repo_url"),
+  prompt: text("prompt").notNull(),
+  agentType: text("agent_type").notNull().default("claude-code"),
+  priority: integer("priority").notNull().default(100),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const promptTemplates = pgTable("prompt_templates", {
   id: uuid("id").primaryKey().defaultRandom(),

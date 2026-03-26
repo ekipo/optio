@@ -12,7 +12,9 @@ import {
   Settings,
   Zap,
   DollarSign,
+  Terminal,
   Clock,
+  FileText,
   GitMerge,
 } from "lucide-react";
 import { UserMenu } from "./user-menu";
@@ -20,10 +22,12 @@ import { UserMenu } from "./user-menu";
 const MAIN_NAV = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/tasks", label: "Tasks", icon: ListTodo },
+  { href: "/sessions", label: "Sessions", icon: Terminal },
   { href: "/repos", label: "Repos", icon: FolderGit2 },
   { href: "/cluster", label: "Cluster", icon: Server },
   { href: "/costs", label: "Costs", icon: DollarSign },
   { href: "/schedules", label: "Schedules", icon: Clock },
+  { href: "/templates", label: "Templates", icon: FileText },
   { href: "/workflows", label: "Workflows", icon: GitMerge },
 ];
 

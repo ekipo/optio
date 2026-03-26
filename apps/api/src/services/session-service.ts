@@ -16,6 +16,8 @@ export interface SessionUser {
   email: string;
   displayName: string;
   avatarUrl: string | null;
+  workspaceId: string | null;
+  workspaceRole: string | null;
 }
 
 /** Find or create a user from an OAuth profile, then create a session. */
@@ -79,6 +81,8 @@ export async function createSession(
       email: user.email,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
+      workspaceId: user.defaultWorkspaceId,
+      workspaceRole: null,
     },
   };
 }
@@ -95,6 +99,7 @@ export async function validateSession(token: string): Promise<SessionUser | null
       email: users.email,
       displayName: users.displayName,
       avatarUrl: users.avatarUrl,
+      defaultWorkspaceId: users.defaultWorkspaceId,
     })
     .from(sessions)
     .innerJoin(users, eq(sessions.userId, users.id))
@@ -110,6 +115,8 @@ export async function validateSession(token: string): Promise<SessionUser | null
     email: row.email,
     displayName: row.displayName,
     avatarUrl: row.avatarUrl,
+    workspaceId: row.defaultWorkspaceId,
+    workspaceRole: null, // resolved by auth middleware from header/cookie
   };
 }
 
@@ -122,6 +129,18 @@ export async function revokeSession(token: string): Promise<void> {
 /** Revoke all sessions for a user. */
 export async function revokeAllUserSessions(userId: string): Promise<void> {
   await db.delete(sessions).where(eq(sessions.userId, userId));
+}
+
+/** Create a short-lived token for WebSocket authentication. */
+export async function createWsToken(userId: string): Promise<string> {
+  const WS_TOKEN_TTL_MS = 60_000; // 60 seconds — enough for the WS upgrade
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = hashToken(token);
+  const expiresAt = new Date(Date.now() + WS_TOKEN_TTL_MS);
+
+  await db.insert(sessions).values({ userId, tokenHash, expiresAt });
+
+  return token;
 }
 
 /** Delete all expired sessions. Returns count of deleted rows. */

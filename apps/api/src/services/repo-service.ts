@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "../db/client.js";
 import { repos } from "../db/schema.js";
 import { normalizeRepoUrl } from "@optio/shared";
@@ -6,6 +6,7 @@ import { normalizeRepoUrl } from "@optio/shared";
 export interface RepoRecord {
   id: string;
   repoUrl: string;
+  workspaceId: string | null;
   fullName: string;
   defaultBranch: string;
   isPrivate: boolean;
@@ -30,11 +31,21 @@ export interface RepoRecord {
   reviewPromptTemplate: string | null;
   testCommand: string | null;
   reviewModel: string | null;
+  maxAutoResumes: number | null;
+  slackWebhookUrl: string | null;
+  slackChannel: string | null;
+  slackNotifyOn: string[] | null;
+  slackEnabled: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export async function listRepos(): Promise<RepoRecord[]> {
+export async function listRepos(workspaceId?: string | null): Promise<RepoRecord[]> {
+  if (workspaceId) {
+    return db.select().from(repos).where(eq(repos.workspaceId, workspaceId)) as Promise<
+      RepoRecord[]
+    >;
+  }
   return db.select().from(repos) as Promise<RepoRecord[]>;
 }
 
@@ -43,9 +54,17 @@ export async function getRepo(id: string): Promise<RepoRecord | null> {
   return (repo as RepoRecord) ?? null;
 }
 
-export async function getRepoByUrl(repoUrl: string): Promise<RepoRecord | null> {
+export async function getRepoByUrl(
+  repoUrl: string,
+  workspaceId?: string | null,
+): Promise<RepoRecord | null> {
   const normalized = normalizeRepoUrl(repoUrl);
-  const [repo] = await db.select().from(repos).where(eq(repos.repoUrl, normalized));
+  const conditions = [eq(repos.repoUrl, normalized)];
+  if (workspaceId) conditions.push(eq(repos.workspaceId, workspaceId));
+  const [repo] = await db
+    .select()
+    .from(repos)
+    .where(and(...conditions));
   return (repo as RepoRecord) ?? null;
 }
 
@@ -54,6 +73,7 @@ export async function createRepo(data: {
   fullName: string;
   defaultBranch?: string;
   isPrivate?: boolean;
+  workspaceId?: string | null;
 }): Promise<RepoRecord> {
   const [repo] = await db
     .insert(repos)
@@ -62,9 +82,10 @@ export async function createRepo(data: {
       fullName: data.fullName,
       defaultBranch: data.defaultBranch ?? "main",
       isPrivate: data.isPrivate ?? false,
+      workspaceId: data.workspaceId ?? undefined,
     })
     .onConflictDoUpdate({
-      target: repos.repoUrl,
+      target: [repos.repoUrl, repos.workspaceId],
       set: {
         fullName: data.fullName,
         defaultBranch: data.defaultBranch ?? "main",
@@ -101,6 +122,10 @@ export async function updateRepo(
     reviewPromptTemplate?: string | null;
     testCommand?: string;
     reviewModel?: string;
+    slackWebhookUrl?: string | null;
+    slackChannel?: string | null;
+    slackNotifyOn?: string[];
+    slackEnabled?: boolean;
   },
 ): Promise<RepoRecord | null> {
   const [repo] = await db

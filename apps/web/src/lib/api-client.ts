@@ -1,9 +1,19 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
+/** Read the current workspace ID from localStorage (set by workspace switcher). */
+function getWorkspaceId(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("optio_workspace_id");
+}
+
 async function request<T>(path: string, opts?: RequestInit): Promise<T> {
   const headers: Record<string, string> = { ...(opts?.headers as Record<string, string>) };
   if (opts?.body) {
     headers["Content-Type"] = "application/json";
+  }
+  const wsId = getWorkspaceId();
+  if (wsId) {
+    headers["x-workspace-id"] = wsId;
   }
   const res = await fetch(`${API_URL}${path}`, {
     ...opts,
@@ -94,15 +104,50 @@ export const api = {
       body: JSON.stringify(prompt ? { prompt } : {}),
     }),
 
-  getTaskLogs: (id: string, params?: { limit?: number; offset?: number }) => {
+  getTaskLogs: (
+    id: string,
+    params?: { limit?: number; offset?: number; search?: string; logType?: string },
+  ) => {
     const qs = new URLSearchParams();
     if (params?.limit) qs.set("limit", String(params.limit));
     if (params?.offset) qs.set("offset", String(params.offset));
+    if (params?.search) qs.set("search", params.search);
+    if (params?.logType) qs.set("logType", params.logType);
     const query = qs.toString();
     return request<{ logs: any[] }>(`/api/tasks/${id}/logs${query ? `?${query}` : ""}`);
   },
 
+  exportTaskLogs: (id: string, params?: { format?: string; search?: string; logType?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.format) qs.set("format", params.format);
+    if (params?.search) qs.set("search", params.search);
+    if (params?.logType) qs.set("logType", params.logType);
+    const query = qs.toString();
+    const url = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/api/tasks/${id}/logs/export${query ? `?${query}` : ""}`;
+    return url;
+  },
+
   getTaskEvents: (id: string) => request<{ events: any[] }>(`/api/tasks/${id}/events`),
+
+  // Comments & Activity
+  getTaskComments: (id: string) => request<{ comments: any[] }>(`/api/tasks/${id}/comments`),
+
+  addTaskComment: (id: string, content: string) =>
+    request<{ comment: any }>(`/api/tasks/${id}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ content }),
+    }),
+
+  updateTaskComment: (taskId: string, commentId: string, content: string) =>
+    request<{ comment: any }>(`/api/tasks/${taskId}/comments/${commentId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ content }),
+    }),
+
+  deleteTaskComment: (taskId: string, commentId: string) =>
+    request<void>(`/api/tasks/${taskId}/comments/${commentId}`, { method: "DELETE" }),
+
+  getTaskActivity: (id: string) => request<{ activity: any[] }>(`/api/tasks/${id}/activity`),
 
   // Secrets
   listSecrets: (scope?: string) => {
@@ -184,6 +229,7 @@ export const api = {
       services: any[];
       events: any[];
       repoPods: any[];
+      metricsAvailable: boolean;
       summary: {
         totalPods: number;
         runningPods: number;
@@ -435,11 +481,98 @@ export const api = {
         email: string;
         displayName: string;
         avatarUrl: string | null;
+        workspaceId: string | null;
+        workspaceRole: string | null;
       };
       authDisabled: boolean;
     }>("/api/auth/me"),
 
   logout: () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
+
+  // Task Templates
+  listTaskTemplates: (repoUrl?: string) => {
+    const qs = repoUrl ? `?repoUrl=${encodeURIComponent(repoUrl)}` : "";
+    return request<{ templates: any[] }>(`/api/task-templates${qs}`);
+  },
+
+  getTaskTemplate: (id: string) => request<{ template: any }>(`/api/task-templates/${id}`),
+
+  createTaskTemplate: (data: {
+    name: string;
+    prompt: string;
+    repoUrl?: string;
+    agentType?: string;
+    priority?: number;
+    metadata?: Record<string, unknown>;
+  }) =>
+    request<{ template: any }>("/api/task-templates", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateTaskTemplate: (id: string, data: Record<string, unknown>) =>
+    request<{ template: any }>(`/api/task-templates/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  deleteTaskTemplate: (id: string) =>
+    request<void>(`/api/task-templates/${id}`, { method: "DELETE" }),
+
+  createTaskFromTemplate: (
+    templateId: string,
+    data: {
+      title: string;
+      repoUrl?: string;
+      repoBranch?: string;
+      prompt?: string;
+      agentType?: string;
+      priority?: number;
+      maxRetries?: number;
+      metadata?: Record<string, unknown>;
+    },
+  ) =>
+    request<{ task: any }>(`/api/tasks/from-template/${templateId}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // Interactive Sessions
+  listSessions: (params?: {
+    repoUrl?: string;
+    state?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const qs = new URLSearchParams();
+    if (params?.repoUrl) qs.set("repoUrl", params.repoUrl);
+    if (params?.state) qs.set("state", params.state);
+    if (params?.limit) qs.set("limit", String(params.limit));
+    if (params?.offset) qs.set("offset", String(params.offset));
+    const query = qs.toString();
+    return request<{ sessions: any[]; activeCount: number }>(
+      `/api/sessions${query ? `?${query}` : ""}`,
+    );
+  },
+
+  getSession: (id: string) => request<{ session: any }>(`/api/sessions/${id}`),
+
+  createSession: (data: { repoUrl: string }) =>
+    request<{ session: any }>("/api/sessions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  endSession: (id: string) =>
+    request<{ session: any }>(`/api/sessions/${id}/end`, { method: "POST" }),
+
+  getSessionPrs: (sessionId: string) => request<{ prs: any[] }>(`/api/sessions/${sessionId}/prs`),
+
+  addSessionPr: (sessionId: string, data: { prUrl: string; prNumber: number }) =>
+    request<{ pr: any }>(`/api/sessions/${sessionId}/prs`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
   // Schedules
   listSchedules: () =>
@@ -543,6 +676,78 @@ export const api = {
         body: JSON.stringify({ cronExpression }),
       },
     ),
+
+  getWsToken: () => request<{ token: string }>("/api/auth/ws-token"),
+
+  // Workspaces
+  listWorkspaces: () =>
+    request<{
+      workspaces: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        role: string;
+      }>;
+    }>("/api/workspaces"),
+
+  getWorkspace: (id: string) =>
+    request<{
+      workspace: {
+        id: string;
+        name: string;
+        slug: string;
+        description: string | null;
+        createdAt: string;
+        updatedAt: string;
+      };
+      role: string;
+    }>(`/api/workspaces/${id}`),
+
+  createWorkspace: (data: { name: string; slug: string; description?: string }) =>
+    request<{ workspace: any }>("/api/workspaces", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateWorkspace: (id: string, data: Record<string, unknown>) =>
+    request<{ workspace: any }>(`/api/workspaces/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  deleteWorkspace: (id: string) => request<void>(`/api/workspaces/${id}`, { method: "DELETE" }),
+
+  switchWorkspace: (id: string) =>
+    request<{ ok: boolean }>(`/api/workspaces/${id}/switch`, { method: "POST" }),
+
+  listWorkspaceMembers: (id: string) =>
+    request<{
+      members: Array<{
+        id: string;
+        workspaceId: string;
+        userId: string;
+        role: string;
+        email: string;
+        displayName: string;
+        avatarUrl: string | null;
+        createdAt: string;
+      }>;
+    }>(`/api/workspaces/${id}/members`),
+
+  addWorkspaceMember: (workspaceId: string, userId: string, role?: string) =>
+    request<{ ok: boolean }>(`/api/workspaces/${workspaceId}/members`, {
+      method: "POST",
+      body: JSON.stringify({ userId, role }),
+    }),
+
+  updateWorkspaceMemberRole: (workspaceId: string, userId: string, role: string) =>
+    request<{ ok: boolean }>(`/api/workspaces/${workspaceId}/members/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
+
+  removeWorkspaceMember: (workspaceId: string, userId: string) =>
+    request<void>(`/api/workspaces/${workspaceId}/members/${userId}`, { method: "DELETE" }),
 
   // ── Dependencies ──────────────────────────────────────────────
   getTaskDependencies: (taskId: string) =>

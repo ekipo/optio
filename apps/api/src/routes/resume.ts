@@ -20,6 +20,10 @@ export async function resumeRoutes(app: FastifyInstance) {
 
     const task = await taskService.getTask(id);
     if (!task) return reply.status(404).send({ error: "Task not found" });
+    const wsId = req.user?.workspaceId;
+    if (wsId && task.workspaceId !== wsId) {
+      return reply.status(404).send({ error: "Task not found" });
+    }
 
     if (!["needs_attention", "failed"].includes(task.state)) {
       return reply.status(409).send({
@@ -58,6 +62,10 @@ export async function resumeRoutes(app: FastifyInstance) {
 
     const task = await taskService.getTask(id);
     if (!task) return reply.status(404).send({ error: "Task not found" });
+    const wsId = req.user?.workspaceId;
+    if (wsId && task.workspaceId !== wsId) {
+      return reply.status(404).send({ error: "Task not found" });
+    }
 
     if (!["needs_attention", "failed", "pr_opened"].includes(task.state)) {
       return reply.status(409).send({
@@ -105,7 +113,11 @@ function buildRestartPrompt(task: {
     parts.push(`You have an existing PR (${task.prUrl}) on this branch. Do NOT create a new PR.`);
   }
 
-  if (task.prChecksStatus === "failing") {
+  if (task.prChecksStatus === "conflicts") {
+    parts.push(
+      "Your PR has merge conflicts with the base branch. Please:\n1. Run `git fetch origin && git rebase origin/main`\n2. Resolve any conflicts\n3. Run the tests to make sure everything still works\n4. Force-push: `git push --force-with-lease`",
+    );
+  } else if (task.prChecksStatus === "failing") {
     parts.push(
       "CI checks are failing on the PR. Investigate the failures, fix the issues, and push.",
     );

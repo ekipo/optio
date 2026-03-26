@@ -1,4 +1,5 @@
 export * from "./types/task.js";
+export * from "./types/workspace.js";
 export * from "./types/agent.js";
 export * from "./types/container.js";
 export * from "./types/secret.js";
@@ -13,3 +14,4 @@ export * from "./constants.js";
 export * from "./prompt-template.js";
 export * from "./types/image.js";
 export * from "./error-classifier.js";
+export * from "./types/session.js";

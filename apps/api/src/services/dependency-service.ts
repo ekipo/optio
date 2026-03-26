@@ -1,4 +1,4 @@
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "../db/client.js";
 import { taskDependencies, tasks } from "../db/schema.js";
 import { TaskState, validateDAG, wouldCreateCycle } from "@optio/shared";
@@ -140,7 +140,9 @@ export async function checkDependencyStatus(taskId: string) {
     return { allMet: true, total: 0, completed: 0, failed: 0, pending: 0 };
   }
 
-  const completed = deps.filter((d) => d.taskState === "completed").length;
+  const completed = deps.filter(
+    (d) => d.taskState === "completed" || d.taskState === "pr_opened",
+  ).length;
   const failed = deps.filter((d) => d.taskState === "failed" || d.taskState === "cancelled").length;
   const pending = deps.length - completed - failed;
 

@@ -1,6 +1,6 @@
 import { eq, desc, and, or, ilike, gte, lte, sql } from "drizzle-orm";
 import { db } from "../db/client.js";
-import { tasks, taskEvents, taskLogs } from "../db/schema.js";
+import { tasks, taskEvents, taskLogs, users } from "../db/schema.js";
 import { TaskState, transition, normalizeRepoUrl, type CreateTaskInput } from "@optio/shared";
 import { publishEvent } from "./event-bus.js";
 import { logger } from "../logger.js";
@@ -24,7 +24,7 @@ export class StateRaceError extends Error {
   }
 }
 
-export async function createTask(input: CreateTaskInput) {
+export async function createTask(input: CreateTaskInput & { workspaceId?: string | null }) {
   const [task] = await db
     .insert(tasks)
     .values({
@@ -38,6 +38,7 @@ export async function createTask(input: CreateTaskInput) {
       metadata: input.metadata,
       maxRetries: input.maxRetries ?? 3,
       priority: input.priority ?? 100,
+      workspaceId: input.workspaceId ?? undefined,
     })
     .returning();
 
@@ -56,10 +57,23 @@ export async function getTask(id: string) {
   return task ?? null;
 }
 
-export async function listTasks(opts?: { state?: string; limit?: number; offset?: number }) {
-  let query = db.select().from(tasks).orderBy(desc(tasks.createdAt));
+export async function listTasks(opts?: {
+  state?: string;
+  limit?: number;
+  offset?: number;
+  workspaceId?: string | null;
+}) {
+  const conditions = [];
   if (opts?.state) {
-    query = query.where(eq(tasks.state, opts.state as any)) as typeof query;
+    conditions.push(eq(tasks.state, opts.state as any));
+  }
+  if (opts?.workspaceId) {
+    conditions.push(eq(tasks.workspaceId, opts.workspaceId));
+  }
+
+  let query = db.select().from(tasks).orderBy(desc(tasks.createdAt));
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as typeof query;
   }
   if (opts?.limit) {
     query = query.limit(opts.limit) as typeof query;
@@ -83,11 +97,17 @@ export interface SearchTasksOpts {
   author?: string;
   cursor?: string;
   limit?: number;
+  workspaceId?: string | null;
 }
 
 export async function searchTasks(opts: SearchTasksOpts) {
   const limit = opts.limit ?? 50;
   const conditions = [];
+
+  // Workspace filter
+  if (opts.workspaceId) {
+    conditions.push(eq(tasks.workspaceId, opts.workspaceId));
+  }
 
   // Full-text search on title and prompt
   if (opts.q) {
@@ -172,6 +192,7 @@ export async function transitionTask(
   toState: TaskState,
   trigger: string,
   message?: string,
+  userId?: string,
 ) {
   const task = await getTask(id);
   if (!task) throw new Error(`Task not found: ${id}`);
@@ -227,6 +248,7 @@ export async function transitionTask(
     toState,
     trigger,
     message,
+    userId,
   });
 
   await publishEvent({
@@ -265,6 +287,11 @@ export async function transitionTask(
       taskType: task.taskType,
     }).catch((err) => logger.warn({ err, taskId: id }, "Failed to enqueue webhook event"));
   }
+
+  // Send Slack notification (fire-and-forget)
+  sendSlackNotificationForTask(updated[0], toState).catch((err) =>
+    logger.warn({ err, taskId: id }, "Failed to send Slack notification"),
+  );
 
   return updated[0];
 }
@@ -315,9 +342,10 @@ export async function tryTransitionTask(
   toState: TaskState,
   trigger: string,
   message?: string,
+  userId?: string,
 ) {
   try {
-    return await transitionTask(id, toState, trigger, message);
+    return await transitionTask(id, toState, trigger, message, userId);
   } catch (err) {
     if (err instanceof StateRaceError) {
       return null;
@@ -377,15 +405,40 @@ export async function appendTaskLog(
   });
 }
 
-export async function getTaskLogs(taskId: string, opts?: { limit?: number; offset?: number }) {
+export async function getTaskLogs(
+  taskId: string,
+  opts?: { limit?: number; offset?: number; search?: string; logType?: string },
+) {
+  const conditions = [eq(taskLogs.taskId, taskId)];
+  if (opts?.logType) {
+    conditions.push(eq(taskLogs.logType, opts.logType));
+  }
+  if (opts?.search) {
+    conditions.push(ilike(taskLogs.content, `%${opts.search}%`));
+  }
   let query = db
     .select()
     .from(taskLogs)
-    .where(eq(taskLogs.taskId, taskId))
+    .where(and(...conditions))
     .orderBy(taskLogs.timestamp);
   if (opts?.limit) query = query.limit(opts.limit) as typeof query;
   if (opts?.offset) query = query.offset(opts.offset) as typeof query;
   return query;
+}
+
+export async function getAllTaskLogs(taskId: string, opts?: { search?: string; logType?: string }) {
+  const conditions = [eq(taskLogs.taskId, taskId)];
+  if (opts?.logType) {
+    conditions.push(eq(taskLogs.logType, opts.logType));
+  }
+  if (opts?.search) {
+    conditions.push(ilike(taskLogs.content, `%${opts.search}%`));
+  }
+  return db
+    .select()
+    .from(taskLogs)
+    .where(and(...conditions))
+    .orderBy(taskLogs.timestamp);
 }
 
 export async function forceRedoTask(id: string) {
@@ -439,9 +492,65 @@ export async function forceRedoTask(id: string) {
 }
 
 export async function getTaskEvents(taskId: string) {
+  const rows = await db
+    .select({
+      id: taskEvents.id,
+      taskId: taskEvents.taskId,
+      fromState: taskEvents.fromState,
+      toState: taskEvents.toState,
+      trigger: taskEvents.trigger,
+      message: taskEvents.message,
+      userId: taskEvents.userId,
+      createdAt: taskEvents.createdAt,
+      userName: users.displayName,
+      userAvatar: users.avatarUrl,
+    })
+    .from(taskEvents)
+    .leftJoin(users, eq(taskEvents.userId, users.id))
+    .where(eq(taskEvents.taskId, taskId))
+    .orderBy(taskEvents.createdAt);
+
+  return rows.map((row) => ({
+    id: row.id,
+    taskId: row.taskId,
+    fromState: row.fromState,
+    toState: row.toState,
+    trigger: row.trigger,
+    message: row.message,
+    userId: row.userId,
+    createdAt: row.createdAt,
+    user: row.userId
+      ? { id: row.userId, displayName: row.userName!, avatarUrl: row.userAvatar }
+      : undefined,
+  }));
+}
+
+/**
+ * Resolve repo config and send a Slack notification for a task state change.
+ */
+async function sendSlackNotificationForTask(
+  task: {
+    id: string;
+    title: string;
+    repoUrl: string;
+    state: string;
+    prUrl?: string | null;
+    costUsd?: string | null;
+    errorMessage?: string | null;
+  },
+  toState: TaskState,
+): Promise<void> {
+  const { notifySlackOnTransition } = await import("./slack-service.js");
+  const { getRepoByUrl } = await import("./repo-service.js");
+  const repoConfig = await getRepoByUrl(task.repoUrl);
+  await notifySlackOnTransition({ ...task, state: toState }, toState, repoConfig);
+}
+
+/** Fetch the most recent state-change events across all tasks. */
+export async function getRecentEvents(opts?: { limit?: number }) {
   return db
     .select()
     .from(taskEvents)
-    .where(eq(taskEvents.taskId, taskId))
-    .orderBy(taskEvents.createdAt);
+    .orderBy(desc(taskEvents.createdAt))
+    .limit(opts?.limit ?? 20);
 }

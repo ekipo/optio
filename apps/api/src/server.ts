@@ -1,5 +1,6 @@
 import Fastify, { type FastifyError } from "fastify";
 import cors from "@fastify/cors";
+import formbody from "@fastify/formbody";
 import rateLimit from "@fastify/rate-limit";
 import websocket from "@fastify/websocket";
 import { healthRoutes } from "./routes/health.js";
@@ -17,11 +18,17 @@ import { issueRoutes } from "./routes/issues.js";
 import { subtaskRoutes } from "./routes/subtasks.js";
 import { analyticsRoutes } from "./routes/analytics.js";
 import { webhookRoutes } from "./routes/webhooks.js";
+import { sessionRoutes } from "./routes/sessions.js";
 import { scheduleRoutes } from "./routes/schedules.js";
+import { commentRoutes } from "./routes/comments.js";
+import { slackRoutes } from "./routes/slack.js";
+import { taskTemplateRoutes } from "./routes/task-templates.js";
+import { workspaceRoutes } from "./routes/workspaces.js";
 import { dependencyRoutes } from "./routes/dependencies.js";
 import { workflowRoutes } from "./routes/workflows.js";
 import { logStreamWs } from "./ws/log-stream.js";
 import { eventsWs } from "./ws/events.js";
+import { sessionTerminalWs } from "./ws/session-terminal.js";
 import authPlugin from "./plugins/auth.js";
 
 const loggerConfig =
@@ -49,6 +56,7 @@ export async function buildServer() {
     timeWindow: "1 minute",
     allowList: ["127.0.0.1", "::1"],
   });
+  await app.register(formbody);
   await app.register(websocket);
 
   // Auth plugin (validates session cookie on protected routes)
@@ -70,13 +78,19 @@ export async function buildServer() {
   await app.register(subtaskRoutes);
   await app.register(analyticsRoutes);
   await app.register(webhookRoutes);
+  await app.register(sessionRoutes);
   await app.register(scheduleRoutes);
+  await app.register(commentRoutes);
+  await app.register(slackRoutes);
+  await app.register(taskTemplateRoutes);
+  await app.register(workspaceRoutes);
   await app.register(dependencyRoutes);
   await app.register(workflowRoutes);
 
   // WebSocket routes
   await app.register(logStreamWs);
   await app.register(eventsWs);
+  await app.register(sessionTerminalWs);
 
   // Global error handler for Zod validation
   app.setErrorHandler((error: FastifyError | Error, _req, reply) => {
