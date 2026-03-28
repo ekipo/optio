@@ -53,19 +53,26 @@ export function startTaskWorker() {
   const worker = new Worker(
     "tasks",
     async (job) => {
-      const { taskId, resumeSessionId, resumePrompt, restartFromBranch, reviewOverride } =
-        job.data as {
-          taskId: string;
-          resumeSessionId?: string;
-          resumePrompt?: string;
-          restartFromBranch?: boolean;
-          reviewOverride?: {
-            renderedPrompt: string;
-            taskFileContent: string;
-            taskFilePath: string;
-            claudeModel?: string;
-          };
+      const {
+        taskId,
+        resumeSessionId,
+        resumePrompt,
+        restartFromBranch,
+        reviewOverride,
+        userSessionToken,
+      } = job.data as {
+        taskId: string;
+        resumeSessionId?: string;
+        resumePrompt?: string;
+        userSessionToken?: string;
+        restartFromBranch?: boolean;
+        reviewOverride?: {
+          renderedPrompt: string;
+          taskFileContent: string;
+          taskFilePath: string;
+          claudeModel?: string;
         };
+      };
       const log = logger.child({ taskId, jobId: job.id });
       let repoPodId: string | null = null;
 
@@ -324,6 +331,12 @@ export function startTaskWorker() {
         // Force-restart: tell the exec script to use the existing PR branch
         if (restartFromBranch) {
           allEnv.OPTIO_RESTART_FROM_BRANCH = "true";
+        }
+
+        // Auth passthrough: inject the requesting user's session token so the
+        // agent can make authenticated HTTP calls to the Optio API.
+        if (userSessionToken) {
+          allEnv.OPTIO_USER_SESSION_TOKEN = userSessionToken;
         }
 
         // Inject repo-level setup config into pod env

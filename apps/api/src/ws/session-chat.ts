@@ -9,6 +9,14 @@ import { parseClaudeEvent } from "../services/agent-event-parser.js";
 import { publishSessionEvent } from "../services/event-bus.js";
 import type { ExecSession } from "@optio/shared";
 
+const SESSION_COOKIE_NAME = "optio_session";
+
+function parseCookieValue(header: string | undefined, name: string): string | undefined {
+  if (!header) return undefined;
+  const match = header.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
 /**
  * Session chat WebSocket handler.
  *
@@ -30,6 +38,14 @@ export async function sessionChatWs(app: FastifyInstance) {
   app.get("/ws/sessions/:sessionId/chat", { websocket: true }, async (socket, req) => {
     const { sessionId } = req.params as { sessionId: string };
     const log = logger.child({ sessionId, ws: "session-chat" });
+
+    // Extract the user's session token for auth passthrough to agent pods.
+    // The agent can use this token to make authenticated API calls on behalf
+    // of the user (e.g. via Optio tool definitions).
+    const userSessionToken =
+      parseCookieValue(req.headers.cookie, SESSION_COOKIE_NAME) ??
+      (req.query as Record<string, string>)?.token ??
+      null;
 
     const session = await getSession(sessionId);
     if (!session) {
@@ -73,6 +89,15 @@ export async function sessionChatWs(app: FastifyInstance) {
 
     // Resolve auth env vars for the claude process
     const authEnv = await buildAuthEnv(log);
+
+    // Auth passthrough: inject the user's session token so the agent can
+    // make authenticated HTTP calls to the Optio API on behalf of the user.
+    if (userSessionToken) {
+      authEnv.OPTIO_USER_SESSION_TOKEN = userSessionToken;
+    }
+    // Also inject the API URL so the agent knows where to call
+    const optioApiUrl = `http://${process.env.API_HOST ?? "optio-api"}:${process.env.API_PORT ?? "4000"}`;
+    authEnv.OPTIO_API_URL = optioApiUrl;
 
     const send = (msg: Record<string, unknown>) => {
       if (socket.readyState === 1) {

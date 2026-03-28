@@ -114,3 +114,19 @@ async function authPlugin(app: FastifyInstance) {
 
 export default fp(authPlugin, { name: "optio-auth" });
 export { SESSION_COOKIE_NAME };
+
+/**
+ * Extract the raw session token from a Fastify request.
+ * Used for auth passthrough — the token can be forwarded to agent pods
+ * so they can make authenticated API calls on behalf of the requesting user.
+ *
+ * Resolution order: Bearer header → session cookie → query param.
+ */
+export function extractSessionToken(req: FastifyRequest): string | null {
+  return (
+    parseBearer(req.headers.authorization) ??
+    parseCookie(req.headers.cookie, SESSION_COOKIE_NAME) ??
+    (req.query as Record<string, string>)?.token ??
+    null
+  );
+}

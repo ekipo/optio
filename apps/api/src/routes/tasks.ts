@@ -7,7 +7,7 @@ import * as dependencyService from "../services/dependency-service.js";
 import { taskQueue } from "../workers/task-worker.js";
 import { db } from "../db/client.js";
 import { tasks } from "../db/schema.js";
-import { requireRole } from "../plugins/auth.js";
+import { requireRole, extractSessionToken } from "../plugins/auth.js";
 
 const listQuerySchema = z.object({
   state: z.string().optional(),
@@ -158,9 +158,10 @@ export async function taskRoutes(app: FastifyInstance) {
         undefined,
         req.user?.id,
       );
+      const userToken = extractSessionToken(req);
       await taskQueue.add(
         "process-task",
-        { taskId: task.id },
+        { taskId: task.id, ...(userToken && { userSessionToken: userToken }) },
         {
           jobId: task.id,
           priority: task.priority ?? 100,
@@ -211,9 +212,14 @@ export async function taskRoutes(app: FastifyInstance) {
     // If the task already has a PR, use restartFromBranch to reuse
     // the existing branch instead of starting fresh
     const hasPrBranch = !!existing.prUrl;
+    const retryToken = extractSessionToken(req);
     await taskQueue.add(
       "process-task",
-      { taskId: id, ...(hasPrBranch && { restartFromBranch: true }) },
+      {
+        taskId: id,
+        ...(hasPrBranch && { restartFromBranch: true }),
+        ...(retryToken && { userSessionToken: retryToken }),
+      },
       {
         jobId: `${id}-retry-${Date.now()}`,
         attempts: 1,
